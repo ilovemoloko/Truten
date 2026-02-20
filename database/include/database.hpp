@@ -7,32 +7,48 @@
 
 #include <pqxx/pqxx>
 #include <string>
-#include <memory>
-#include <optional>
+#include <iostream>
 
-class Database {
+struct Database {
 public:
     Database();
-    ~Database();
 
-    bool connect(const std::string& conn_str);
-    void disconnect();
+    Database(const std::string& connect_string) : conn(pqxx::connection(connect_string)) {
+    }
 
-    bool createTable();
+    void execute(std::string& command) {
+        pqxx::work txn(conn);
+        txn.exec(command);
+        txn.commit();
+    }
+
+    void init();
 
     bool createUser(const std::string& email, const std::string& password);
     bool deleteUser(std::string id);
-    bool addUserHours(std::string id);
-    bool banUser(std::string id, int duration);
-    bool isAdmin(std::string id);
+    bool addUserHours(const std::string &id, int amount = 2);
+    bool banUser(const std::string& id, int duration);
+    bool isAdmin(const std::string& id);
+    bool userExists(const std::string& id);
 
-    int getUserHours(std::string id);
+    void changeSlotInfo(const std::string& id, const std::string& start_time, const std::string& end_time, int capacity);
+    void closeSlot(const std::string& id);
 
-    bool isConnected() const { return conn != nullptr && conn->is_open(); }
+    void removeEntry(const std::string& user_id, const std::string& slot_id);
+    void addEntry(const std::string& user_id, const std::string& slot_id);
+
+
+    pqxx::result getSlotInfo(const std::string& id);
+
+    std::vector<std::string> getGymList();
+
+    [[nodiscard]] int getUserHours(const std::string& id);
+    [[nodiscard]] int getUnbanTime(const std::string& id);
+
+    [[nodiscard]] bool isConnected() const { return conn.is_open(); }
 
 private:
-    std::unique_ptr<pqxx::connection> conn;
-    std::string connection_string;
+    pqxx::connection conn;
 };
 
 #endif //SERVER_DATABASE_HPP

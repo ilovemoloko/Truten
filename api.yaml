@@ -548,9 +548,6 @@ components:
         error:
           type: string
           description: Сообщение об ошибке
-        code:
-          type: integer
-          description: Код ошибки
       required:
         - error
         - code

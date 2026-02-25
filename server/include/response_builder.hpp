@@ -11,32 +11,17 @@ struct requestHandler;
 
 struct ResponseBuilder {
 public:
-    ResponseBuilder() {
-        status_code = *RESPONSE_CODE::OK;
+    ResponseBuilder() : status_code(*RESPONSE_CODE::OK) {
+
     }
 
-    explicit ResponseBuilder(const int c, const std::string& error_message = "") {
-        status_code = c;
+    explicit ResponseBuilder(const int code, const std::string& error_message = "") : status_code(code) {
         if (!error_message.empty()) {
             addField("error", error_message);
             return;
         }
-        //i hate ts
-        if (c == *RESPONSE_CODE::NO_ACCESS) {
-            addField("error", "You can't access this method");
-            return;
-        }
-        if (c == *RESPONSE_CODE::BAD_GATEWAY) {
-            addField("error", "Something broke on the server :(");
-            return;
-        }
-        if (c == *RESPONSE_CODE::INVALID) {
-            addField("error", "Some values you provided are invalid");
-            return;
-        }
-        if (c == *RESPONSE_CODE::NOT_FOUND) {
-            addField("error", "Couldn't find what you asked for!");
-            return;
+        if (code != *RESPONSE_CODE::OK && code != *RESPONSE_CODE::OK_EMPTY) {
+            changeStatusCode(code);
         }
     }
 
@@ -48,12 +33,30 @@ public:
 
     }
 
+    void changeStatusCode(const int new_code) {
+        status_code = new_code;
+        if (new_code == *RESPONSE_CODE::NO_ACCESS) {
+            addField("error", "You can't access this method");
+        } else if (new_code == *RESPONSE_CODE::BAD_GATEWAY) {
+            addField("error", "Something broke on the server :(");
+        } else if (new_code == *RESPONSE_CODE::INVALID) {
+            addField("error", "Some values you provided are invalid");
+        } else if (new_code == *RESPONSE_CODE::NOT_FOUND) {
+            addField("error", "Couldn't find what you asked for!");
+        }
+    }
+
+    void changeStatusCode(const RESPONSE_CODE new_code) {
+        changeStatusCode(*new_code);
+    }
+
     template<typename T>
     ResponseBuilder addField(const std::string& field_name, const T& value) {
         response_body[field_name] = value;
         return *this;
     }
 
+    //TODO: required for gym list, queue and stats
     ResponseBuilder addField(const std::string& field_name, const std::vector<std::string>& value);
 
     [[nodiscard]] crow::response build() {

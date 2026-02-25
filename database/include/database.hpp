@@ -24,10 +24,10 @@ public:
 
     void init();
 
-    bool createUser(const std::string& email, const std::string& password);
-    bool deleteUser(std::string id);
-    bool addUserHours(const std::string &id, int amount = 2);
-    bool banUser(const std::string& id, int duration);
+    void createUser(const std::string& email, const std::string& password);
+    void deleteUser(std::string id);
+    void addUserHours(const std::string &id, int amount = 2);
+    void banUser(const std::string& id, int duration);
     bool isAdmin(const std::string& id);
     bool userExists(const std::string& id);
 

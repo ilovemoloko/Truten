@@ -29,11 +29,13 @@ int main() {
     });
     CROW_ROUTE(app, "/v1/user/<string>/gainedHours").methods("POST"_method)(
         [&db](const crow::request &req, const std::string &user_id) {
+            bool found_user = db.userExists(user_id);
+            if (!found_user) {
+                return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
+            }
             requestHandler request(req);
             request.require("hours", crow::json::type::Number);
-            if (!db.addUserHours(user_id)) {
-                return ResponseBuilder(RESPONSE_CODE::BAD_GATEWAY).build();
-            }
+            db.addUserHours(user_id);
             return ResponseBuilder(request).build();
         });
 
@@ -49,9 +51,7 @@ int main() {
             if (!db.isAdmin(user_id)) {
                 return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
             }
-            if (!db.banUser(user_id, duration)) {
-                return ResponseBuilder(RESPONSE_CODE::BAD_GATEWAY).build();
-            }
+            db.banUser(user_id, duration);
             return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
         });
 
@@ -68,10 +68,9 @@ int main() {
 
     CROW_ROUTE(app, "/v1/user/<string>/stats")(
         [&db](const crow::request &req, const std::string &user_id) {
-            //TODO: add stats. Not for MVP.
+            //TODO: not mvp
             return ResponseBuilder().build();
         });
-    //TODO: add error handling below
     CROW_ROUTE(app, "/v1/sections/gymList")(
         //TODO: add campus selection
         //TODO: gotta think how to implement this properly
@@ -83,15 +82,10 @@ int main() {
         [&db](const crow::request &req, const std::string &slot_id) {
             ResponseBuilder response;
             auto res = db.getSlotInfo(slot_id)[0];
-            //abomination
-            //TODO: think of something better than this
-            response.addField("slot_id", res["id"].as<std::string>());
-            response.addField("section_id", res["section_id"].as<std::string>());
-            response.addField("section_name", res["section_name"].as<std::string>());
+            for (std::string field : {"slot_id", "section_id", "section_name", "enrolled", "start_time", "end_time"}) {
+                response.addField(field, res[field].as<std::string>());
+            }
             response.addField("capacity", res["capacity"].as<int>());
-            response.addField("enrolled", res["enrolled"].as<std::string>());
-            response.addField("start_time", res["start_time"].as<std::string>());
-            response.addField("end_time", res["end_time"].as<std::string>());
             response.addField("is_cancelled", res["is_cancelled"].as<bool>());
             return response.build();
         });
@@ -114,7 +108,7 @@ int main() {
     CROW_ROUTE(app, "/v1/slots/<string>").methods("DELETE"_method)(
         [&db](const crow::request &req, const std::string &slot_id) {
             db.closeSlot(slot_id);
-            return ResponseBuilder().build();
+            return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
         });
 
     CROW_ROUTE(app, "/v1/slots/<string>/entries").methods("POST"_method)(

@@ -23,9 +23,13 @@ public:
     }
 
     void init();
-
-    void createUser(const std::string& email, const std::string& password);
-    void deleteUser(std::string id);
+    //new auth methods
+    bool emailExusts(const std::string& email);
+    std::string getUserIdEmail(const std::string& email);
+    std::string getPasswordByEmail(const std::string& email);
+    //new auth methods
+    bool createUser(const std::string& email, const std::string& password);//i think create and delete should be bool to get true, when we create succesfully
+    bool deleteUser(std::string id);
     void addUserHours(const std::string &id, int amount = 2);
     void banUser(const std::string& id, int duration);
     bool isAdmin(const std::string& id);

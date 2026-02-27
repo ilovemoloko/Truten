@@ -1,3 +1,4 @@
-#include "../include/GymModelView.h"
+#include "GymModelView.h"
 
-GymModelView::GymModelView() {}
+GymModelView::GymModelView() {
+}

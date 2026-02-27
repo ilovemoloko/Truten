@@ -1,3 +1,4 @@
-#include "../include/SlotModelView.h"
+#include "SlotModelView.h"
 
-SlotModelView::SlotModelView() {}
+SlotModelView::SlotModelView() {
+}

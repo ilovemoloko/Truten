@@ -1,3 +1,4 @@
-#include "../include/LoginModelView.h"
+#include "LoginModelView.h"
 
-LoginModelView::LoginModelView() {}
+LoginModelView::LoginModelView() {
+}

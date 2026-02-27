@@ -19,6 +19,20 @@ find_package(PkgConfig REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(PostgreSQL REQUIRED)
 find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+include(FetchContent)
+
+# jwt-cpp (header-only). Prefer vendored submodule in libs/jwt-cpp, otherwise FetchContent.
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/libs/jwt-cpp/CMakeLists.txt)
+    add_subdirectory(libs/jwt-cpp)
+else()
+    FetchContent_Declare(jwt-cpp
+            GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
+            GIT_TAG v0.7.0
+    )
+    FetchContent_MakeAvailable(jwt-cpp)
+endif()
 
 add_executable(Server src/main.cpp
         ../database/src/database.cpp
@@ -33,6 +47,8 @@ target_link_libraries(Server
         Boost::system
         Threads::Threads
         pthread
+        OpenSSL::Crypto
+        jwt-cpp::jwt-cpp
 )
 
 target_include_directories(Server PRIVATE

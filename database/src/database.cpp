@@ -111,3 +111,38 @@ int Database::getUserHours(const std::string &id) {
     const auto resp = txn.exec_params("SELECT hours FROM users WHERE ID = $1", id);
     return resp.begin()[0].as<int>();
 }
+//new auth methods
+bool Database::emailExists(const std::string& email){
+    pqxx::work txt(conn);
+    const auto res = txn.exec_params("SELECT 1 FROM users WHERE email = $1", email);
+    return !res.empty();
+}
+
+std::string Database::getUserIdByEmail(const std::string& email) {
+    pqxx::work txn(conn);
+    const auto res = txn.exec_params("SELECT id FROM users WHERE email = $1", email);
+    if (res.empty()) {
+        return "";
+    }
+    return res[0]["id"].c_str();
+}
+
+std::string Database::getPasswordByEmail(const std::string& email) {
+    pqxx::work txn(conn);
+    const auto res = txn.exec_params("SELECT password FROM users WHERE email = $1", email);
+    if (res.empty()) {
+        return "";
+    }
+    return res[0]["password"].c_str();
+}
+
+bool Database::createUser(const std::string& email, const std::string& password, std::string& out_user_id) {
+    pqxx::work txn(conn);
+    const auto res = txn.exec_params("INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id", email, password);
+    if (res.empty())
+        return false;
+    out_user_id = res[0]["id"].c_str();
+    txn.commit();
+    return true;
+}
+//maybe need get password by id idk:)

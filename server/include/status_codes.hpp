@@ -14,8 +14,6 @@ enum class RESPONSE_CODE {
     NO_ACCESS = 403
 };
 
-inline int operator*(RESPONSE_CODE code) {
-    return static_cast<int>(code);
-}
+inline int operator*(RESPONSE_CODE code) { return static_cast<int>(code); }
 
-#endif //SERVER_STATUS_CODES_HPP
+#endif // SERVER_STATUS_CODES_HPP

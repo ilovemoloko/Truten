@@ -1,3 +1,6 @@
+#hell if I know what's going on here. May God have mercy on our souls
+#for the abomination we have created in this very file is despicable.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 cmake_minimum_required(VERSION 3.20)
 project(Truten_Server)
 
@@ -10,9 +13,9 @@ endif()
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/libs/Crow/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/routes
+        ${CMAKE_CURRENT_SOURCE_DIR}/../Crow/include
         /usr/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../database/include
 )
 
 find_package(PkgConfig REQUIRED)
@@ -35,7 +38,7 @@ else()
 endif()
 
 add_executable(Server src/main.cpp
-        ../database/src/database.cpp
+        src/database.cpp
 )
 
 pkg_check_modules(PQXX REQUIRED libpqxx)

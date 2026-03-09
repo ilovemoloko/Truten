@@ -5,17 +5,17 @@
 #ifndef SERVER_RESPONSE_BUILDER_HPP
 #define SERVER_RESPONSE_BUILDER_HPP
 #include "crow.h"
+#include "request_handler.hpp"
 #include "status_codes.hpp"
-
-struct requestHandler;
 
 struct ResponseBuilder {
 public:
     ResponseBuilder() : status_code(*RESPONSE_CODE::OK) {
-
     }
 
-    explicit ResponseBuilder(const int code, const std::string& error_message = "") : status_code(code) {
+    explicit ResponseBuilder(const int code,
+                             const std::string &error_message = "")
+        : status_code(code) {
         if (!error_message.empty()) {
             addField("error", error_message);
             return;
@@ -25,12 +25,13 @@ public:
         }
     }
 
-    explicit ResponseBuilder(const RESPONSE_CODE c, const std::string& error_message = "") : ResponseBuilder(*c, error_message) {
-
+    explicit ResponseBuilder(const RESPONSE_CODE c,
+                             const std::string &error_message = "")
+        : ResponseBuilder(*c, error_message) {
     }
 
-    explicit ResponseBuilder(const requestHandler& request) : ResponseBuilder(request.response_code, request.error_message) {
-
+    explicit ResponseBuilder(const RequestHandler &request)
+        : ResponseBuilder(request.response_code, request.error_message) {
     }
 
     void changeStatusCode(const int new_code) {
@@ -51,13 +52,10 @@ public:
     }
 
     template<typename T>
-    ResponseBuilder addField(const std::string& field_name, const T& value) {
+    ResponseBuilder addField(const std::string &field_name, const T &value) {
         response_body[field_name] = value;
         return *this;
     }
-
-    //TODO: required for gym list, queue and stats
-    ResponseBuilder addField(const std::string& field_name, const std::vector<std::string>& value);
 
     [[nodiscard]] crow::response build() {
         return {status_code, response_body.dump()};
@@ -68,4 +66,4 @@ private:
     crow::json::wvalue response_body;
 };
 
-#endif //SERVER_RESPONSE_BUILDER_HPP
+#endif // SERVER_RESPONSE_BUILDER_HPP

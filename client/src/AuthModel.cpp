@@ -57,7 +57,10 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
             break;
         }
         default:
-            emit loginApiError("Unknown status code");
+            QString serverMessage = json["error"].toString();
+            emit loginApiError("Unknown status code: " + \
+                reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toString() +\
+                std::move(serverMessage));
             break;
     }
 }
@@ -111,10 +114,11 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
             break;
         }
         default:
+            QString serverMessage = json["error"].toString();
             emit createAccountApiError(
                 "Unknown status code: " +
                 reply->attribute(QNetworkRequest::HttpStatusCodeAttribute)
-                    .toString()
+                    .toString() + std::move(serverMessage)
             );
             break;
     }

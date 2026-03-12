@@ -24,7 +24,7 @@ add_executable(appclient
         include/GymModelView.h src/GymModelView.cpp
         include/SlotModelView.h src/SlotModelView.cpp
         include/AuthModelView.h src/AuthModelView.cpp
-        include/BaseAPIModel.h src/BaseModel.cpp
+        include/BaseAPIModel.h src/BaseAPIModel.cpp
         shared/enumToken.h
         include/GymModel.h src/GymModel.cpp
         include/SlotModel.h src/SlotModel.cpp

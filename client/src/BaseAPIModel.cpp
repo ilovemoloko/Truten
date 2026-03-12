@@ -7,8 +7,8 @@ QString BaseModel::m_accessToken = QString();
 QString BaseModel::m_refreshToken = QString();
 QString BaseModel::m_userId = QString();
 
-QString BaseModel::baseUrl() {  // SIOF safety
-    static const QString url = QStringLiteral("http://api.example.com/v1");
+QString BaseModel::baseUrl() {
+    static const QString url = QStringLiteral("http://127.0.0.1:8080/v1");
     return url;
 }
 

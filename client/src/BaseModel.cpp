@@ -1,4 +1,4 @@
-#include "BaseModel.h"
+#include "BaseAPIModel.h"
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>

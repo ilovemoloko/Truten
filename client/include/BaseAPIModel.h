@@ -1,5 +1,5 @@
-#ifndef BASEMODEL_H
-#define BASEMODEL_H
+#ifndef BASEAPIMODEL_H
+#define BASEAPIMODEL_H
 
 #include <QNetworkAccessManager>
 #include <QObject>
@@ -28,4 +28,4 @@ protected:
     );
 };
 
-#endif  // BASEMODEL_H
+#endif  // BASEAPIMODEL_H

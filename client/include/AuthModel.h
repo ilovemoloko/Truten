@@ -3,7 +3,7 @@
 
 #include <QNetworkAccessManager>
 #include <QObject>
-#include "BaseModel.h"
+#include "BaseAPIModel.h"
 
 class AuthModel : public BaseModel {
     Q_OBJECT
@@ -25,8 +25,8 @@ signals:
     void createAccountApiError(const QString &err_message);
 
 private slots:
-    void loginApiReply(QNetworkReply *reply);
 
+    void loginApiReply(QNetworkReply *reply);
     void createAccountApiReply(QNetworkReply *reply);
 };
 

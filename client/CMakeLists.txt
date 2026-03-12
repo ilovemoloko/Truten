@@ -11,28 +11,42 @@ find_package(Qt6 COMPONENTS
         Gui
         Widgets
         Network
+        Quick
+        Qml
         REQUIRED)
 
-add_executable(client
+qt_policy(SET QTP0004 NEW)
+
+
+add_executable(appclient
         src/main.cpp
         include/AuthModel.h src/AuthModel.cpp
         include/GymModelView.h src/GymModelView.cpp
         include/SlotModelView.h src/SlotModelView.cpp
-        include/LoginModelView.h src/LoginModelView.cpp
-        qml/LoginView.qml
-        qml/GymView.qml
-        qml/SlotView.qml
-        include/BaseModel.h src/BaseModel.cpp
+        include/AuthModelView.h src/AuthModelView.cpp
+        include/BaseAPIModel.h src/BaseModel.cpp
         shared/enumToken.h
         include/GymModel.h src/GymModel.cpp
         include/SlotModel.h src/SlotModel.cpp
         )
 
-target_include_directories(client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/shared)
+qt_add_qml_module(appclient
+    URI client
+    VERSION 1.0
+    RESOURCE_PREFIX /qt/qml
+    QML_FILES
+        qml/AuthView.qml
+        qml/GymView.qml
+        qml/SlotView.qml
+)
 
-target_link_libraries(client PRIVATE
+target_include_directories(appclient PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/shared)
+
+target_link_libraries(appclient PRIVATE
         Qt6::Core
         Qt6::Gui
         Qt6::Widgets
         Qt6::Network
+        Qt6::Qml
+        Qt6::Quick
 )

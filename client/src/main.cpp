@@ -1,21 +1,34 @@
-#include <QApplication>
-#include <QPushButton>
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QNetworkAccessManager>
+
 #include "AuthModel.h"
+#include "AuthModelView.h"
 
 int main(int argc, char *argv[]) {
-    QApplication a(argc, argv);
+    QGuiApplication app(argc, argv);
 
-    QNetworkAccessManager *networkManager = new QNetworkAccessManager(&a);
+    QNetworkAccessManager *networkManager = new QNetworkAccessManager(&app);
 
-    /* HINT: all models use ONLY one network manager (check BaseModel.h).
-     * Thats why we need to initialize 3 models with *networkManager.
-     * TODO: main.cpp (button is just a "stub")
-     */
+    AuthModel *authModel = new AuthModel(networkManager, &app);
 
-    AuthModel *authApi = new AuthModel(networkManager, &a);
+    AuthModelView *authViewModel = new AuthModelView(authModel, &app);
 
-    QPushButton button("Hello world!", nullptr);
-    button.resize(200, 100);
-    button.show();
-    return QApplication::exec();
+    QQmlApplicationEngine engine;
+
+    engine.rootContext()->setContextProperty("authVM", authViewModel);
+
+    const QUrl url(QStringLiteral("qrc:/qt/qml/client/qml/AuthView.qml"));
+
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
+                     &app, [url](QObject *obj, const QUrl &objUrl) {
+                         if (!obj && url == objUrl)
+                             QCoreApplication::exit(-1);
+    }, Qt::QueuedConnection);
+
+    engine.load(url);
+
+
+    return app.exec();
 }

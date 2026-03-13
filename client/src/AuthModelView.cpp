@@ -22,11 +22,11 @@ void AuthModelView::login(const QString &email, const QString &password) {
     m_model->loginApi(email, password);
 }
 
-void AuthModelView::createAccount(const QString &email, const QString &password) {
+void AuthModelView::createAccount(const QString &name, const QString &email, const QString &password) {
     setLoading(true);
     setError("");
 
-    m_model->createAccountApi(email, password);
+    m_model->createAccountApi(name, email, password);
 }
 
 void AuthModelView::onApiFinished(const QJsonObject &reply_data) {

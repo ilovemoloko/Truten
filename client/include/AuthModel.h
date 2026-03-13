@@ -15,7 +15,7 @@ public:
     );
 
     void loginApi(const QString &email, const QString &password);
-    void createAccountApi(const QString &email, const QString &password);
+    void createAccountApi(const QString& username, const QString &email, const QString &password);
 
 signals:
     void loginApiFinished(const QJsonObject &reply_data);

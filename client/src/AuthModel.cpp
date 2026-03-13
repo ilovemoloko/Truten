@@ -26,8 +26,19 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
         emit loginApiError("Network error: " + reply->errorString());
         return;
     }
+    int statusCode =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
     QByteArray rawData = reply->readAll();
+    qDebug() << "Raw data from server:" << rawData;
+
+    if(rawData.isEmpty() || rawData == "null"){
+        qDebug() << "Ошибка сервера, код:" << statusCode;
+        emit loginApiError("Сервер вернул ошибку: " + QString::number(statusCode));
+        return;
+    }
+
+
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(rawData, &parseError);
 
@@ -40,18 +51,15 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
 
     QJsonObject json = QJsonObject(doc.object());
 
-    int statusCode =
-        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
     switch (statusCode) {
         case 403: {
             QString serverMessage = json["error"].toString();
             emit loginApiError("403 error: " + serverMessage);
             return;
         }
-        case 203: {
-            m_accessToken = json["accessToken"].toString();
-            m_refreshToken = json["refreshToken"].toString();
+        case 200: {
+            // m_accessToken = json["accessToken"].toString(); add for JWT
+            // m_refreshToken = json["refreshToken"].toString();
             m_userId = json["userId"].toString();
             emit loginApiFinished(json);
             break;
@@ -59,17 +67,19 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
         default:
             QString serverMessage = json["error"].toString();
             emit loginApiError("Unknown status code: " + \
-                reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toString() +\
-                std::move(serverMessage));
+                QString::number(statusCode) +\
+                serverMessage);
             break;
     }
 }
 
 void AuthModel::createAccountApi(
+    const QString &name,
     const QString &email,
     const QString &password
 ) {
     QJsonObject json;
+    json["name"] = name;
     json["email"] = email;
     json["password"] = password;
 
@@ -89,7 +99,19 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
         return;
     }
 
+    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
     QByteArray rawData = reply->readAll();
+
+    qDebug() << "Raw data from server:" << rawData;
+
+
+    if(rawData.isEmpty() || rawData == "null"){
+        qDebug() << "Ошибка сервера, код:" << statusCode;
+        emit loginApiError("Сервер вернул ошибку: " + QString::number(statusCode));
+        return;
+    }
+
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(rawData, &parseError);
 
@@ -102,24 +124,19 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
 
     QJsonObject json = QJsonObject(doc.object());
 
-    int statusCode =
-        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
     switch (statusCode) {
         case 200: {
-            m_accessToken = json["accessToken"].toString();
-            m_refreshToken = json["refreshToken"].toString();
+            // m_accessToken = json["accessToken"].toString(); add for JWT
+            // m_refreshToken = json["refreshToken"].toString();
             m_userId = json["userId"].toString();
             emit createAccountApiFinished(json);
             break;
         }
         default:
             QString serverMessage = json["error"].toString();
-            emit createAccountApiError(
+            emit createAccountApiError( // if unknow statusCode returns json
                 "Unknown status code: " +
-                reply->attribute(QNetworkRequest::HttpStatusCodeAttribute)
-                    .toString() + std::move(serverMessage)
-            );
+                QString::number(statusCode) + serverMessage);
             break;
     }
 }

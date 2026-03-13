@@ -18,7 +18,7 @@ public:
     QString errorMessage() const { return m_errorMessage; }
 
     Q_INVOKABLE void login(const QString &email, const QString &password);
-    Q_INVOKABLE void createAccount(const QString &email, const QString &password);
+    Q_INVOKABLE void createAccount(const QString &name, const QString &email, const QString &password);
 
 signals:
     void isLoadingChanged();

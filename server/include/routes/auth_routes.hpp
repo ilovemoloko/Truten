@@ -32,8 +32,8 @@ public:
                     const auto password = static_cast<std::string>(request["password"]);
                     const auto name = static_cast<std::string>(request["name"]);
                     db_auth.createUser(email, password, name);
-                    std::string userId = db_auth.getUserIdByEmail(email);
-                    return ResponseBuilder(request).addField("userId", userId).build();
+                    const std::string user_id = db_auth.getUserIdByEmail(email);
+                    return ResponseBuilder(RESPONSE_CODE::OK).addField("userId", user_id).build();
                 });
 
         CROW_ROUTE(app, "/v1/auth/login")
@@ -47,11 +47,12 @@ public:
                     const auto email = static_cast<std::string>(request["email"]);
                     const auto password = static_cast<std::string>(request["password"]);
                     const std::string real_password = db_auth.getPasswordByEmail(email);
+                    const std::string user_id = db_auth.getUserIdByEmail(email);
                     if (password == real_password) {
                         // TODO: not mvp, but add JWT
-                        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+                        return ResponseBuilder(RESPONSE_CODE::OK).build();
                     }
-                    return ResponseBuilder(RESPONSE_CODE::INVALID).build();
+                    return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
                 });
         // TODO: not mvp, but add JWT
         CROW_ROUTE(app, "/v1/auth/refresh")

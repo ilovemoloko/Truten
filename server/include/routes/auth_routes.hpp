@@ -32,7 +32,8 @@ public:
                     const auto password = static_cast<std::string>(request["password"]);
                     const auto name = static_cast<std::string>(request["name"]);
                     db_auth.createUser(email, password, name);
-                    return ResponseBuilder(request).build();
+                    std::string userId = db_auth.getUserIdByEmail(email);
+                    return ResponseBuilder(request).addField("userId", userId).build();
                 });
 
         CROW_ROUTE(app, "/v1/auth/login")

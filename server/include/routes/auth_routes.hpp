@@ -50,7 +50,7 @@ public:
                     const std::string user_id = db_auth.getUserIdByEmail(email);
                     if (password == real_password) {
                         // TODO: not mvp, but add JWT
-                        return ResponseBuilder(RESPONSE_CODE::OK).build();
+                        return ResponseBuilder(RESPONSE_CODE::OK).addField("userId", user_id).build();
                     }
                     return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
                 });

@@ -1,24 +1,34 @@
 #ifndef AUTHMODELVIEW_H
 #define AUTHMODELVIEW_H
 
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
-#include <QJsonObject>
 #include "AuthModel.h"
 
 class AuthModelView : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
-    Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
+    Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged
+    )
 
 public:
     explicit AuthModelView(AuthModel *model, QObject *parent = nullptr);
 
-    bool isLoading() const { return m_isLoading; }
-    QString errorMessage() const { return m_errorMessage; }
+    bool isLoading() const {
+        return m_isLoading;
+    }
+
+    QString errorMessage() const {
+        return m_errorMessage;
+    }
 
     Q_INVOKABLE void login(const QString &email, const QString &password);
-    Q_INVOKABLE void createAccount(const QString &name, const QString &email, const QString &password);
+    Q_INVOKABLE void createAccount(
+        const QString &name,
+        const QString &email,
+        const QString &password
+    );
 
 signals:
     void isLoadingChanged();

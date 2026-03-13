@@ -1,8 +1,7 @@
 #include <QGuiApplication>
+#include <QNetworkAccessManager>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QNetworkAccessManager>
-
 #include "AuthModel.h"
 #include "AuthModelView.h"
 
@@ -21,14 +20,17 @@ int main(int argc, char *argv[]) {
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/client/qml/AuthView.qml"));
 
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                     &app, [url](QObject *obj, const QUrl &objUrl) {
-                         if (!obj && url == objUrl)
-                             QCoreApplication::exit(-1);
-    }, Qt::QueuedConnection);
+    QObject::connect(
+        &engine, &QQmlApplicationEngine::objectCreated, &app,
+        [url](QObject *obj, const QUrl &objUrl) {
+            if (!obj && url == objUrl) {
+                QCoreApplication::exit(-1);
+            }
+        },
+        Qt::QueuedConnection
+    );
 
     engine.load(url);
-
 
     return app.exec();
 }

@@ -7,9 +7,15 @@ AuthModel::AuthModel(QNetworkAccessManager *manager, QObject *parent)
 }
 
 void AuthModel::loginApi(const QString &email, const QString &password) {
+
+    if(!isValidEmail(email)){
+        emit loginApiError("Некорректный формат электронной почты");
+        return;
+    }
+
     QJsonObject json;
     json["email"] = email;
-    json["password"] = password;
+    json["password"] = hashPassword(password);
 
     QNetworkReply *reply =
         sendPostRequest("/auth/login", json, Token::WITHOUT_TOKEN);
@@ -32,12 +38,13 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
     QByteArray rawData = reply->readAll();
     qDebug() << "Raw data from server:" << rawData;
 
-    if(rawData.isEmpty() || rawData == "null"){
+    if (rawData.isEmpty() || rawData == "null") {
         qDebug() << "Ошибка сервера, код:" << statusCode;
-        emit loginApiError("Сервер вернул ошибку: " + QString::number(statusCode));
+        emit loginApiError(
+            "Сервер вернул ошибку: " + QString::number(statusCode)
+        );
         return;
     }
-
 
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(rawData, &parseError);
@@ -66,9 +73,10 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
         }
         default:
             QString serverMessage = json["error"].toString();
-            emit loginApiError("Unknown status code: " + \
-                QString::number(statusCode) +\
-                serverMessage);
+            emit loginApiError(
+                "Unknown status code: " + QString::number(statusCode) +
+                serverMessage
+            );
             break;
     }
 }
@@ -78,10 +86,14 @@ void AuthModel::createAccountApi(
     const QString &email,
     const QString &password
 ) {
+    if(!isValidEmail(email)){
+        emit createAccountApiError("Некорректный формат электронной почты");
+        return;
+    }
     QJsonObject json;
     json["name"] = name;
     json["email"] = email;
-    json["password"] = password;
+    json["password"] = hashPassword(password);
 
     QNetworkReply *reply =
         sendPostRequest("/auth/createAccount", json, Token::WITHOUT_TOKEN);
@@ -99,16 +111,18 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
         return;
     }
 
-    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    int statusCode =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
     QByteArray rawData = reply->readAll();
 
     qDebug() << "Raw data from server:" << rawData;
 
-
-    if(rawData.isEmpty() || rawData == "null"){
+    if (rawData.isEmpty() || rawData == "null") {
         qDebug() << "Ошибка сервера, код:" << statusCode;
-        emit loginApiError("Сервер вернул ошибку: " + QString::number(statusCode));
+        emit loginApiError(
+            "Сервер вернул ошибку: " + QString::number(statusCode)
+        );
         return;
     }
 
@@ -134,9 +148,10 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
         }
         default:
             QString serverMessage = json["error"].toString();
-            emit createAccountApiError( // if unknow statusCode returns json
-                "Unknown status code: " +
-                QString::number(statusCode) + serverMessage);
+            emit createAccountApiError(  // if unknow statusCode returns json
+                "Unknown status code: " + QString::number(statusCode) +
+                serverMessage
+            );
             break;
     }
 }

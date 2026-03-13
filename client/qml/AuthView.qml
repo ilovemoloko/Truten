@@ -125,7 +125,6 @@ Window {
                         }
                     }
 
-                    // Ошибка
                     Text {
                         text: authVM.errorMessage
                         color: "#b91c1c"

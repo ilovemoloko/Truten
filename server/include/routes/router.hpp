@@ -1,7 +1,3 @@
-//
-// Created by asavelev on 3/9/26.
-//
-
 #ifndef TRUTEN_SERVER_ROUTER_HPP
 #define TRUTEN_SERVER_ROUTER_HPP
 
@@ -13,12 +9,12 @@
 #include "slot_routes.hpp"
 #include "user_routes.hpp"
 
-struct Router {
-    explicit Router(const crow::SimpleApp &orig_app, Database &orig_db)
+struct ServerMain {
+    explicit ServerMain(const crow::SimpleApp &orig_app, Database &orig_db)
         : app(std::move(orig_app)), db(std::move(orig_db)) {
     }
 
-    void setup_and_run() {
+    void run() {
         /*
          *I didn't want to make a constructor
          *like AuthRoutes auth(db, app)

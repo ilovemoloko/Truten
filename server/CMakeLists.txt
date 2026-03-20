@@ -14,6 +14,7 @@ endif()
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/routes
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/dbmanagers
         ${CMAKE_CURRENT_SOURCE_DIR}/../Crow/include
         /usr/include
 )
@@ -39,6 +40,10 @@ endif()
 
 add_executable(Server src/main.cpp
         src/database.cpp
+        include/dbmanagers/auth_manager.hpp
+        include/dbmanagers/user_manager.hpp
+        src/slot_manager.cpp
+        src/user_manager.cpp
 )
 
 pkg_check_modules(PQXX REQUIRED libpqxx)

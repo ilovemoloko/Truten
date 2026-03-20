@@ -1,7 +1,3 @@
-//
-// Created by asavelev on 2/17/26.
-//
-
 #ifndef SERVER_RESPONSE_BUILDER_HPP
 #define SERVER_RESPONSE_BUILDER_HPP
 #include "crow.h"
@@ -14,10 +10,10 @@ public:
     }
 
     explicit ResponseBuilder(const int code,
-                             const std::string &error_message = "")
+                             const std::optional<std::string> &error_message = std::nullopt)
         : status_code(code) {
-        if (!error_message.empty()) {
-            addField("error", error_message);
+        if (error_message.has_value() && !error_message->empty()) {
+            addField("error", *error_message);
             return;
         }
         if (code != *RESPONSE_CODE::OK && code != *RESPONSE_CODE::OK_EMPTY) {
@@ -38,7 +34,7 @@ public:
         status_code = new_code;
         if (new_code == *RESPONSE_CODE::NO_ACCESS) {
             addField("error", "You can't access this method");
-        } else if (new_code == *RESPONSE_CODE::BAD_GATEWAY) {
+        } else if (new_code == *RESPONSE_CODE::SERVER_ERROR) {
             addField("error", "Something broke on the server :(");
         } else if (new_code == *RESPONSE_CODE::INVALID) {
             addField("error", "Some values you provided are invalid");

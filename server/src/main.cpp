@@ -1,6 +1,3 @@
-//
-// Created by asavelev on 2/17/26.
-//
 #include "crow.h"
 #include "database.hpp"
 #include "router.hpp"
@@ -14,7 +11,7 @@ int main() {
 
     Database db(connection_string);
     crow::SimpleApp app;
-    Router router(app, db);
-    router.setup_and_run();
+    ServerMain router(app, db);
+    router.run();
     return 0;
 }

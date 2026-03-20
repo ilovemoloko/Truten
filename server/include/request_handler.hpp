@@ -1,7 +1,3 @@
-//
-// Created by asavelev on 2/17/26.
-//
-
 #ifndef SERVER_REQUEST_HANDLER_HPP
 #define SERVER_REQUEST_HANDLER_HPP
 #include "crow.h"

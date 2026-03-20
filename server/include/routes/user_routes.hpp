@@ -1,7 +1,3 @@
-//
-// Created by asavelev on 3/9/26.
-//
-
 #ifndef TRUTEN_SERVER_USER_ROUTES_HPP
 #define TRUTEN_SERVER_USER_ROUTES_HPP
 
@@ -16,53 +12,74 @@ public:
     explicit UserRoutes(const Database &db) : db_user(db) {
     }
 
+    crow::response getUserHours(const std::string& user_id) const {
+        if (!db_user.userExists(user_id)) {
+            return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
+        }
+        const int gained_hours = db_user.getUserHours(user_id);
+        ResponseBuilder response;
+        response.addField("gainedHours", gained_hours);
+        return response.build();
+    }
+
+    crow::response addUserHours(const crow::request& req, const std::string& user_id) {
+        if (!db_user.userExists(user_id)) {
+            return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
+        }
+        RequestHandler request(req);
+        request.require("hours", crow::json::type::Number);
+        if (!request.responseIsOk()) {
+            return ResponseBuilder(request).build();
+        }
+        const int hours = static_cast<int>(request["hours"]);
+        db_user.addUserHours(user_id, hours);
+        return ResponseBuilder(request).build();
+    }
+
+    crow::response banUser(const crow::request& req, const std::string& user_id) {
+        if (!db_user.userExists(user_id)) {
+            return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
+        }
+        RequestHandler request(req);
+        request.require("banDuration", crow::json::type::Number);
+        const int duration = static_cast<int>(request["banDuration"]);
+        db_user.banUser(user_id, duration);
+        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+    }
+
+    crow::response getUnbanTime(const std::string& user_id) const {
+        if (!db_user.userExists(user_id)) {
+            return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
+        }
+        const int unban_time = db_user.getUnbanTime(user_id);
+        return ResponseBuilder().addField("unbanTime", unban_time).build();
+    }
+
+    crow::response deleteUser(const std::string& id) {
+        db_user.deleteUser(id);
+        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+    }
+
     void registerRoutes(crow::SimpleApp &app) {
         CROW_ROUTE(app, "/v1/user/<string>/gainedHours")(
             [this](const crow::request &req, const std::string &user_id) {
-                if (!db_user.userExists(user_id)) {
-                    return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
-                }
-                const int gained_hours = db_user.getUserHours(user_id);
-                ResponseBuilder response;
-                response.addField("gainedHours", gained_hours);
-                return response.build();
+                return getUserHours(user_id);
             });
         CROW_ROUTE(app, "/v1/user/<string>/gainedHours")
                 .methods("POST"_method)(
                     [this](const crow::request &req, const std::string &user_id) {
-                        if (!db_user.userExists(user_id)) {
-                            return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
-                        }
-                        RequestHandler request(req);
-                        request.require("hours", crow::json::type::Number);
-                        if (!request.responseIsOk()) {
-                            return ResponseBuilder(request).build();
-                        }
-                        const int hours = static_cast<int>(request["hours"]);
-                        db_user.addUserHours(user_id, hours);
-                        return ResponseBuilder(request).build();
+                        return addUserHours(req, user_id);
                     });
 
         CROW_ROUTE(app, "/v1/user/<string>/isBanned")
                 .methods("POST"_method)(
                     [this](const crow::request &req, const std::string &user_id) {
-                        if (!db_user.userExists(user_id)) {
-                            return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
-                        }
-                        RequestHandler request(req);
-                        request.require("banDuration", crow::json::type::Number);
-                        const int duration = static_cast<int>(request["banDuration"]);
-                        db_user.banUser(user_id, duration);
-                        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+                        return banUser(req, user_id);
                     });
 
         CROW_ROUTE(app, "/v1/user/<string>/unbanTime")(
             [this](const crow::request &req, const std::string &user_id) {
-                if (!db_user.userExists(user_id)) {
-                    return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
-                }
-                const int unban_time = db_user.getUnbanTime(user_id);
-                return ResponseBuilder().addField("unbanTime", unban_time).build();
+                return getUnbanTime(user_id);
             });
 
         CROW_ROUTE(app, "/v1/user/<string>/stats")(
@@ -74,8 +91,7 @@ public:
         CROW_ROUTE(app, "/v1/user/<string>/account")
                 .methods("DELETE"_method)(
                     [this](const crow::request &req, const std::string &id) {
-                        db_user.deleteUser(id);
-                        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+                        return deleteUser(id);
                     });
     }
 

@@ -1,13 +1,9 @@
-//
-// Created by asavelev on 2/17/26.
-//
-
 #ifndef SERVER_STATUS_CODES_HPP
 #define SERVER_STATUS_CODES_HPP
 
 enum class RESPONSE_CODE {
     OK = 200,
-    BAD_GATEWAY = 503,
+    SERVER_ERROR = 500,
     NOT_FOUND = 404,
     OK_EMPTY = 204,
     INVALID = 400,

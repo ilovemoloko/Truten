@@ -1,7 +1,3 @@
-//
-// Created by asavelev on 3/9/26.
-//
-
 #ifndef TRUTEN_SERVER_QUEUE_ROUTES_HPP
 #define TRUTEN_SERVER_QUEUE_ROUTES_HPP
 

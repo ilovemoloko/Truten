@@ -10,7 +10,7 @@
 #include "user_routes.hpp"
 
 struct ServerMain {
-    explicit ServerMain(const crow::SimpleApp &orig_app, Database &orig_db)
+    explicit ServerMain(const crow::SimpleApp &orig_app, std::shared_ptr<Database> orig_db)
         : app(std::move(orig_app)), db(std::move(orig_db)) {
     }
 
@@ -23,7 +23,7 @@ struct ServerMain {
          *something to change when simply
          *creating an object.
          */
-        db.init();
+        db->init();
         AuthRoutes auth(db);
         QueueRoutes queue;
         SectionRoutes sections;
@@ -39,7 +39,7 @@ struct ServerMain {
 
 private:
     crow::SimpleApp app;
-    Database db;
+    std::shared_ptr<Database> db;
 };
 
 #endif // TRUTEN_SERVER_ROUTER_HPP

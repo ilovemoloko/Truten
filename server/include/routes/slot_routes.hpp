@@ -10,7 +10,7 @@
 
 struct SlotRoutes {
 public:
-    explicit SlotRoutes(Database &db) : db_slots(db) {
+    explicit SlotRoutes(std::shared_ptr<Database> db) : db_slots(std::move(db)) {
     }
 
     crow::response getSlots(const std::string& slot_id) const {

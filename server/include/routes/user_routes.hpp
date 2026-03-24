@@ -6,10 +6,11 @@
 #include "request_handler.hpp"
 #include "response_builder.hpp"
 #include "status_codes.hpp"
+#include "user_manager.hpp"
 
 struct UserRoutes {
 public:
-    explicit UserRoutes(const Database &db) : db_user(db) {
+    explicit UserRoutes(std::shared_ptr<Database> db) : db_user(std::move(db)) {
     }
 
     crow::response getUserHours(const std::string& user_id) const {

@@ -6,8 +6,8 @@
 // Includes but is not limited to hours, admin status, ban status
 struct UserManager {
 public:
-    explicit UserManager(Database& database)
-        : db(&database) {
+    explicit UserManager(std::shared_ptr<Database> database)
+        : db(std::move(database)) {
     };
 
     void addUserHours(const std::string &id, int amount);

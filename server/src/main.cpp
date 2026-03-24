@@ -9,7 +9,7 @@ int main() {
             "host=localhost "
             "port=5432";
 
-    Database db(connection_string);
+    auto db = std::make_shared<Database>(connection_string);
     crow::SimpleApp app;
     ServerMain router(app, db);
     router.run();

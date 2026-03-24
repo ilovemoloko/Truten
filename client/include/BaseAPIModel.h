@@ -20,6 +20,7 @@ protected:
     static QString m_accessToken;
     static QString m_refreshToken;
     static QString m_userId;
+    static QString m_userName;
 
     QNetworkReply *sendPostRequest(
         const QString &path,

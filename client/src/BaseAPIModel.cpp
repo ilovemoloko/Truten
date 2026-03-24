@@ -6,6 +6,7 @@
 QString BaseModel::m_accessToken = QString();
 QString BaseModel::m_refreshToken = QString();
 QString BaseModel::m_userId = QString();
+QString BaseModel::m_userName = QString();
 
 QString BaseModel::baseUrl() {
     static const QString url = QStringLiteral("http://127.0.0.1:8080/v1");

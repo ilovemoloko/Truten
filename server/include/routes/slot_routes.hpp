@@ -105,7 +105,7 @@ public:
                         return deleteUserEntry(req, slot_id);
                     });
 
-        CROW_ROUTE(app, "v1/sections/gymList").methods("GET"_method)(
+        CROW_ROUTE(app, "/v1/sections/gymList").methods("GET"_method)(
             [this](const crow::request& req) {
                 return getGymList();
             });

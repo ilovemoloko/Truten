@@ -26,12 +26,12 @@ struct ServerMain {
         db->init();
         AuthRoutes auth(db);
         QueueRoutes queue;
-        SectionRoutes sections;
+        //SectionRoutes sections; double "/v1/sections/gymList" implementation
         SlotRoutes slots(db);
         UserRoutes users(db);
         auth.registerRoutes(app);
         queue.registerRoutes(app);
-        sections.registerRoutes(app);
+        //sections.registerRoutes(app);
         slots.registerRoutes(app);
         users.registerRoutes(app);
         app.port(8080).multithreaded().run();

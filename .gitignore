@@ -12,7 +12,7 @@ cmake_install.cmake
 install_manifest.txt
 build.ninja
 compile_commands.json
-
+.env
 .idea/
 *.user
 

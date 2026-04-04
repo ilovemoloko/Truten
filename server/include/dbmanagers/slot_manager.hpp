@@ -15,8 +15,8 @@ struct GymList {
 // 5-year-olds here. Go on.
 struct SlotManager {
 public:
-    explicit SlotManager(Database& database)
-        : db(&database) {
+    explicit SlotManager(std::shared_ptr<Database> database)
+        : db(std::move(database)) {
     }
 
     void changeSlotInfo(const std::string &id, const std::string &start_time,

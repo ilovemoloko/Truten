@@ -11,7 +11,7 @@ struct AuthRoutes {
 public:
     using crow::json::type::String;
 
-    explicit AuthRoutes(Database &db) : db_auth(db) {
+    explicit AuthRoutes(std::shared_ptr<Database> db) : db_auth(std::move(db)) {
     }
 
     crow::response createAccount(const crow::request &req) {

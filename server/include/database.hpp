@@ -1,6 +1,7 @@
 #ifndef SERVER_DATABASE_HPP
 #define SERVER_DATABASE_HPP
 
+#include <fstream>
 #include <mutex>
 #include <pqxx/pqxx>
 #include <string>
@@ -45,6 +46,7 @@ public:
         txn.commit();
         return res;
     }
+    static void loadEnv(const std::string& path = ".env");
 
 private:
     const std::string conn_string;

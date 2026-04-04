@@ -9,8 +9,8 @@ security:
 
 servers:
   - url: http://api.example.com/v1
-    description: Production server
-
+    description: Production server 
+    
 paths:
   /user/{user-id}/gainedHours:
     get:

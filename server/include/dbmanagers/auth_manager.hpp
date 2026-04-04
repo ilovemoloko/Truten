@@ -9,7 +9,7 @@
 // Includes but is not limited to emails, passwords, JWT(?), IDs
 struct AuthManager {
 public:
-    explicit AuthManager(Database& database) : db(&database) {
+    explicit AuthManager(std::shared_ptr<Database> database) : db(std::move(database)) {
 
     }
 

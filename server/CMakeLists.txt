@@ -15,7 +15,6 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/routes
         ${CMAKE_CURRENT_SOURCE_DIR}/include/dbmanagers
-        ${CMAKE_CURRENT_SOURCE_DIR}/../Crow/include
         /usr/include
 )
 
@@ -26,6 +25,13 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 include(FetchContent)
+
+FetchContent_Declare(
+        Crow
+        GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
+        GIT_TAG v1.2.0
+)
+FetchContent_MakeAvailable(Crow)
 
 # jwt-cpp (header-only). Prefer vendored submodule in libs/jwt-cpp, otherwise FetchContent.
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/libs/jwt-cpp/CMakeLists.txt)
@@ -44,6 +50,7 @@ add_executable(Server src/main.cpp
         include/dbmanagers/user_manager.hpp
         src/slot_manager.cpp
         src/user_manager.cpp
+        src/auth_manager.cpp
 )
 
 pkg_check_modules(PQXX REQUIRED libpqxx)
@@ -62,6 +69,7 @@ target_link_libraries(Server
 target_include_directories(Server PRIVATE
         ${PQXX_INCLUDE_DIRS}
         ${PostgreSQL_INCLUDE_DIRS}
+        ${crow_SOURCE_DIR}/include
 )
 
 target_compile_options(Server PRIVATE ${PQXX_CFLAGS_OTHER})

@@ -194,28 +194,31 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /sections/gymList:
-    get:
-      summary: Получить список доступных залов
-      operationId: getGymList
-      responses:
-        '200':
-          description: Успешный запрос
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  sections:
-                    type: array
-                    items:
-                      type: string
-                    description: Названия залов
-                  ids:
-                    type: array
-                    items:
-                      type: string
-                      format: uuid
-                    description: UUID залов
+      get:
+        summary: Получить список доступных залов
+        operationId: getGymList
+        responses:
+          '200':
+            description: Успешный запрос
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    sections:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - id
+                          - name
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+                            description: Название зала
 
   /sections/{gym-id}/slots:
     get:

@@ -5,10 +5,10 @@ import QtQuick.Layouts 1.15
 
 Window {
     id: root
-    width: 450
+    width: 550
     height: 650
     visible: true
-    title: "Трутень"
+    title: "Truten"
     color: "#ffffff"
 
 

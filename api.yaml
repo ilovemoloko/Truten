@@ -194,9 +194,44 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /sections/gymList:
+      get:
+        summary: Получить список доступных залов
+        operationId: getGymList
+        responses:
+          '200':
+            description: Успешный запрос
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    sections:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - id
+                          - name
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+                            description: Название зала
+
+  /sections/{gym-id}/slots:
     get:
-      summary: Получить список доступных залов
-      operationId: getGymList
+      summary: Получить список слотов для зала
+      operationId: getGymSlots
+      parameters:
+        - name: gym-id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID зала
       responses:
         '200':
           description: Успешный запрос
@@ -205,16 +240,39 @@ paths:
               schema:
                 type: object
                 properties:
-                  sections:
+                  slots:
                     type: array
                     items:
-                      type: string
-                    description: Названия залов
-                  ids:
-                    type: array
-                    items:
-                      type: integer
-
+                      type: object
+                      properties:
+                        slotId:
+                          $ref: '#/components/schemas/SlotId'
+                        startTime:
+                          type: string
+                          format: date-time
+                          description: Время начала слота
+                        endTime:
+                          type: string
+                          format: date-time
+                          description: Время окончания слота
+                        capacity:
+                          type: integer
+                          description: Вместимость слота
+                        participantsCount:
+                          type: integer
+                          description: Количество записавшихся
+                        participants:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Participant'
+                          description: Список пар ID-Имя (для админа)
+                    description: Список слотов зала
+        '404':
+          description: Зал не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /slots/{slot-id}:
     get:
@@ -236,11 +294,11 @@ paths:
                 properties:
                   slotId:
                     $ref: '#/components/schemas/SlotId'
-                  participants:
-                    type: integer
-                    description: Количество записавшихся
-                  capacity:
-                    type: integer
+                  gymId:
+                    type: string
+                    format: uuid
+                  gymName:
+                    type: string
                   startTime:
                     type: string  
                     format: date-time
@@ -249,10 +307,16 @@ paths:
                     type: string
                     format: date-time
                     description: Время окончания
-                  gymId:
+                  capacity:
                     type: integer
-                  gymName:
-                    type: string
+                  participantsCount:
+                    type: integer
+                    description: Количество записавшихся
+                  participants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Participant'
+                    description: Детальный список записавшихся (для админа)
         '404':
           description: Слот не существует
           content:
@@ -542,6 +606,17 @@ components:
       type: string
       format: uuid
       description: "Уникальный идентификатор слота"
+    Participant:
+      type: object
+      required:
+        - userId
+        - userName
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        userName:
+          type: string
+          description: "Имя пользователя"
     Error:
       type: object
       properties:

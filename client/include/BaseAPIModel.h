@@ -17,16 +17,34 @@ public:
 
 protected:
     QNetworkAccessManager *m_manager;
-    static QString m_accessToken;
-    static QString m_refreshToken;
-    static QString m_userId;
-    static QString m_userName;
+
+    static QString getUserId(){
+        return m_userId;
+    };
+
+    static void setUserId(const QString& userId){
+        m_userId = userId;
+    };
+
 
     QNetworkReply *sendPostRequest(
         const QString &path,
         const QJsonObject &json,
         Token withToken
     );
+
+    QNetworkReply *sendGetRequest(
+        const QString &path,
+        Token withToken
+    );
+
+    QString handleReplyError(QNetworkReply *reply);
+
+private:
+    static QString m_accessToken;
+    static QString m_refreshToken;
+    static QString m_userId;
+    static QString m_userName;
 };
 
 #endif  // BASEAPIMODEL_H

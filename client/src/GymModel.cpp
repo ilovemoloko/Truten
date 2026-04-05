@@ -15,7 +15,7 @@ void GymModel::handleReply(
     auto deleteReply = qScopeGuard([reply] { reply->deleteLater(); });
 
     if (reply->error() != QNetworkReply::NoError) {
-        emit apiError("Ошибка сети: " + reply->errorString());
+        emit apiError(handleReplyError(reply));
         return;
     }
 
@@ -36,16 +36,12 @@ void GymModel::handleReply(
     }
 
     QJsonObject json = doc.object();
-    if (statusCode >= 400) {
-        emit apiError(json["error"].toString("Ошибка сервера"));
-        return;
-    }
 
     onSuccess(statusCode, json);
 }
 
 void GymModel::fetchGyms() {
-    QNetworkReply *reply = sendPostRequest("/gyms/list", {}, Token::WITH_TOKEN);
+    QNetworkReply *reply = sendGetRequest("/sections/GymList", Token::WITHOUT_TOKEN);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(reply, [this](int, const QJsonObject &json) {
             emit gymsLoaded(json);
@@ -53,10 +49,10 @@ void GymModel::fetchGyms() {
     });
 }
 
-void GymModel::fetchSlots(int gymId) {
+void GymModel::fetchSlots(const QString& gymId) {
     QJsonObject body;
     body["gym_id"] = gymId;
-    QNetworkReply *reply = sendPostRequest("/slots/list", body, Token::WITH_TOKEN);
+    QNetworkReply *reply = sendGetRequest("/slots/list", body, Token::WITHOUT_TOKEN);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(reply, [this](int, const QJsonObject &json) {
             emit slotsLoaded(json);
@@ -67,7 +63,7 @@ void GymModel::fetchSlots(int gymId) {
 void GymModel::bookSlot(int slotId) {
     QJsonObject body;
     body["slot_id"] = slotId;
-    QNetworkReply *reply = sendPostRequest("/slots/book", body, Token::WITH_TOKEN);
+    QNetworkReply *reply = sendPostRequest("/slots/book", body, Token::WITHOUT_TOKEN);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(reply, [this](int, const QJsonObject &json) {
             emit bookingFinished(json);
@@ -79,7 +75,7 @@ void GymModel::cancelBooking(int slotId) {
     QJsonObject body;
     body["slot_id"] = slotId;
     QNetworkReply *reply =
-        sendPostRequest("/slots/cancel", body, Token::WITH_TOKEN);
+        sendPostRequest("/slots/cancel", body, Token::WITHOUT_TOKEN);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(reply, [this](int, const QJsonObject &json) {
             emit bookingFinished(json);
@@ -89,7 +85,7 @@ void GymModel::cancelBooking(int slotId) {
 
 void GymModel::fetchUserStats() {
     QNetworkReply *reply =
-        sendPostRequest("/user/stats", {}, Token::WITH_TOKEN);
+        sendPostRequest("/user/stats", {}, Token::WITHOUT_TOKEN);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(reply, [this](int, const QJsonObject &json) {
             emit statsLoaded(json);

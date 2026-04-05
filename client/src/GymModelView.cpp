@@ -114,8 +114,8 @@ void GymModelView::onSlotsLoaded(const QJsonObject &data) {
     for (const QJsonValue &val : slotsArray) {
         QJsonObject slotObj = val.toObject();
         QVariantMap slot;
-        slot["id"] = slotObj["id"].toInt();
-        slot["activity"] = slotObj["activity"].toString();
+        slot["id"] = slotObj["slot_id"].toString();
+        slot["section_name"] = slotObj["section_name"].toString();
         slot["time"] = slotObj["time"].toString();
         slot["occupied"] = slotObj["occupied"].toInt();
         slot["capacity"] = slotObj["capacity"].toInt();

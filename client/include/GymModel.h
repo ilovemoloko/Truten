@@ -13,15 +13,15 @@ public:
     explicit GymModel(QNetworkAccessManager *manager, QObject *parent = nullptr);
 
     void fetchGyms();
-    void fetchSlots(int gymId);
-    void bookSlot(int slotId);
-    void cancelBooking(int slotId);
+
+    //void bookSlot(int slotId);
+    //void cancelBooking(int slotId);
     void fetchUserStats();
 
 signals:
     void gymsLoaded(const QJsonObject &data);
-    void slotsLoaded(const QJsonObject &data);
-    void bookingFinished(const QJsonObject &data);
+    //void slotsLoaded(const QJsonObject &data);
+    //void bookingFinished(const QJsonObject &data);
     void statsLoaded(const QJsonObject &data);
     void apiError(const QString &message);
 

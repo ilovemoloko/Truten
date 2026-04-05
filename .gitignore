@@ -13,6 +13,7 @@ install_manifest.txt
 build.ninja
 compile_commands.json
 .env
+client/CMakeLists.txt.qtds
 
 .idea/
 *.user

@@ -4,6 +4,8 @@
 #include <QQmlContext>
 #include "AuthModel.h"
 #include "AuthModelView.h"
+#include "GymModel.h"
+#include "GymModelView.h"
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -13,6 +15,10 @@ int main(int argc, char *argv[]) {
     AuthModel *authModel = new AuthModel(networkManager, &app);
 
     AuthModelView *authViewModel = new AuthModelView(authModel, &app);
+
+    GymModel *gymModel = new GymModel(networkManager, &app);
+
+    GymModelView *gymViewModel = new GymModelView(gymModel, &app);
 
     QQmlApplicationEngine engine;
 

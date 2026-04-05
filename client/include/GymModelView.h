@@ -13,7 +13,7 @@ class GymModelView : public QObject {
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(QVariantList gyms READ gyms NOTIFY gymsChanged)
-    Q_PROPERTY(QVariantList slots READ slots NOTIFY slotsChanged)
+    Q_PROPERTY(QVariantList slots READ getSlots NOTIFY slotsChanged)
     Q_PROPERTY(int selectedGymId READ selectedGymId NOTIFY selectedGymIdChanged)
     Q_PROPERTY(QString userName READ userName NOTIFY userInfoChanged)
     Q_PROPERTY(int visitCount READ visitCount NOTIFY userInfoChanged)
@@ -24,28 +24,29 @@ public:
 
     bool isLoading() const {
         return m_isLoading;
-    }
+    };
     QString errorMessage() const {
         return m_errorMessage;
-    }
+    };
     QVariantList gyms() const {
         return m_gyms;
-    }
-    QVariantList slots() const {
+    };
+
+    QVariantList getSlots() const {
         return m_slots;
-    }
+    };
     int selectedGymId() const {
         return m_selectedGymId;
-    }
+    };
     QString userName() const {
         return m_userName;
-    }
+    };
     int visitCount() const {
         return m_visitCount;
-    }
+    };
     int visitsNeeded() const {
         return m_visitsNeeded;
-    }
+    };
 
     Q_INVOKABLE void init();
     Q_INVOKABLE void selectGym(int gymId);

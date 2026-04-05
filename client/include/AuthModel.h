@@ -38,7 +38,7 @@ signals:
     void createAccountApiFinished(const QJsonObject &reply_data);
     void createAccountApiError(const QString &err_message);
 
-private slots:
+private:
 
     void loginApiReply(QNetworkReply *reply);
     void createAccountApiReply(QNetworkReply *reply);

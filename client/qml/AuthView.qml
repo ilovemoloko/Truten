@@ -18,7 +18,7 @@ Window {
             initialItem: authPage
     }
     Connections {
-        target: authVM
+        target: authMV
         function onAuthSuccess() {
             mainStack.replace("GymView.qml")
         }
@@ -84,7 +84,7 @@ Window {
                         font.pixelSize: 14
                         color: "#2d241e"
                         visible: isRegisterMode
-                        enabled: !authVM.isLoading
+                        enabled: !authMV.isLoading
 
                         background: Rectangle {
                             radius: 10
@@ -100,7 +100,7 @@ Window {
                         leftPadding: 16
                         font.pixelSize: 14
                         color: "#2d241e"
-                        enabled: !authVM.isLoading
+                        enabled: !authMV.isLoading
 
                         background: Rectangle {
                             radius: 10
@@ -117,7 +117,7 @@ Window {
                         leftPadding: 16
                         font.pixelSize: 14
                         color: "#2d241e"
-                        enabled: !authVM.isLoading
+                        enabled: !authMV.isLoading
 
                         background: Rectangle {
                             radius: 10
@@ -126,12 +126,12 @@ Window {
                     }
 
                     Text {
-                        text: authVM.errorMessage
+                        text: authMV.errorMessage
                         color: "#b91c1c"
                         font.pixelSize: 12
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
-                        visible: authVM.errorMessage !== ""
+                        visible: authMV.errorMessage !== ""
                         horizontalAlignment: Text.AlignHCenter
                     }
 
@@ -140,12 +140,12 @@ Window {
                     Button {
                         id: loginButton
                         text: {
-                            if (authVM.isLoading) return "Ожидание..."
+                            if (authMV.isLoading) return "Ожидание..."
                             return isRegisterMode ? "Зарегистрироваться" : "Войти в систему"
                         }
                         Layout.fillWidth: true
                         Layout.preferredHeight: 50
-                        enabled: !authVM.isLoading && emailInput.text !== "" && passwordInput.text !== ""
+                        enabled: !authMV.isLoading && emailInput.text !== "" && passwordInput.text !== ""
 
                         contentItem: Text {
                             text: loginButton.text
@@ -164,9 +164,9 @@ Window {
 
                         onClicked: {
                             if (isRegisterMode) {
-                                authVM.createAccount(nameInput.text, emailInput.text, passwordInput.text)
+                                authMV.createAccount(nameInput.text, emailInput.text, passwordInput.text)
                             } else {
-                                authVM.login(emailInput.text, passwordInput.text)
+                                authMV.login(emailInput.text, passwordInput.text)
                             }
                         }
                     }

@@ -3,8 +3,8 @@
 
 #include <QNetworkAccessManager>
 #include <QObject>
-#include "BaseAPIModel.h"
 #include <QRegularExpression>
+#include "BaseAPIModel.h"
 
 class AuthModel : public BaseModel {
     Q_OBJECT
@@ -23,11 +23,16 @@ public:
     );
 
     static QString hashPassword(const QString &password) {
-        return QString(QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256).toHex());
+        return QString(QCryptographicHash::hash(
+                           password.toUtf8(), QCryptographicHash::Sha256
+        )
+                           .toHex());
     }
 
     static bool isValidEmail(const QString &email) {
-        QRegularExpression re(R"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)");
+        QRegularExpression re(
+            R"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        );
         return re.match(email).hasMatch();
     }
 
@@ -39,10 +44,8 @@ signals:
     void createAccountApiError(const QString &err_message);
 
 private:
-
     void loginApiReply(QNetworkReply *reply);
     void createAccountApiReply(QNetworkReply *reply);
-
 };
 
 #endif  // AUTHMODEL_H

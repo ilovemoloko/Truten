@@ -3,20 +3,31 @@
 #include <QJsonObject>
 #include <QVariantMap>
 
-GymModelView::GymModelView(GymModel *model, QObject *parent)
-    : QObject(parent), m_model(model) {
-    connect(m_model, &GymModel::gymsLoaded, this, &GymModelView::onGymsLoaded);
+GymModelView::GymModelView(
+    GymModel *gymModel,
+    SlotModel *slotModel,
+    QObject *parent
+)
+    : QObject(parent), m_gymModel(gymModel), m_slotModel(slotModel) {
     connect(
-        m_model, &GymModel::slotsLoaded, this, &GymModelView::onSlotsLoaded
+        m_gymModel, &GymModel::gymsLoaded, this, &GymModelView::onGymsLoaded
     );
     connect(
-        m_model,
-        &GymModel::bookingFinished,
-        this,
+        m_gymModel, &GymModel::statsLoaded, this, &GymModelView::onStatsLoaded
+    );
+    connect(m_gymModel, &GymModel::gymError, this, &GymModelView::onApiError);
+
+    connect(
+        m_slotModel, &SlotModel::slotsLoaded, this, &GymModelView::onSlotsLoaded
+    );
+    connect(
+        m_slotModel, &SlotModel::bookingFinished, this,
         &GymModelView::onBookingFinished
     );
-    connect(m_model, &GymModel::statsLoaded, this, &GymModelView::onStatsLoaded);
-    connect(m_model, &GymModel::apiError, this, &GymModelView::onApiError);
+
+    connect(
+        m_slotModel, &SlotModel::slotError, this, &GymModelView::onApiError
+    );
 }
 
 void GymModelView::beginRequest() {
@@ -46,93 +57,82 @@ void GymModelView::init() {
     emit errorMessageChanged();
 
     beginRequest();
-    m_model->fetchUserStats();
+    m_gymModel->fetchUserStats();
 
     beginRequest();
-    m_model->fetchGyms();
+    m_gymModel->fetchGyms();
 }
 
-void GymModelView::selectGym(int gymId) {
-    if (m_selectedGymId == gymId)
-        return;
+
+// returns gym's slots
+void GymModelView::selectGym(const QString &gymId) {
     m_selectedGymId = gymId;
     emit selectedGymIdChanged();
     m_slots.clear();
     emit slotsChanged();
-    reloadSlots();
+    loadSlots(m_selectedGymId);
 }
 
-void GymModelView::reloadSlots() {
-    if (m_selectedGymId < 0)
-        return;
+void GymModelView::loadSlots(const QString &gymId) {
     beginRequest();
-    m_model->fetchSlots(m_selectedGymId);
+    m_slotModel->fetchSlots(gymId);
 }
 
-void GymModelView::bookSlot(int slotId) {
+
+
+void GymModelView::bookSlot(const QString &slotId) {
     beginRequest();
-    m_model->bookSlot(slotId);
+    m_slotModel->bookSlot(slotId);
 }
 
-void GymModelView::cancelBooking(int slotId) {
+void GymModelView::cancelBooking(const QString &slotId) {
     beginRequest();
-    m_model->cancelBooking(slotId);
+    m_slotModel->cancelBooking(slotId);
 }
 
 void GymModelView::onGymsLoaded(const QJsonObject &data) {
     endRequest();
 
-    QJsonArray gymsArray = data["gyms"].toArray();
     m_gyms.clear();
-    for (const QJsonValue &val : gymsArray) {
-        QJsonObject gymObj = val.toObject();
-        QVariantMap gym;
-        gym["id"] = gymObj["id"].toInt();
-        gym["name"] = gymObj["name"].toString();
-        m_gyms.append(gym);
-    }
-    emit gymsChanged();
+    m_gyms = data["sections"].toArray().toVariantList();
 
-    // Auto-select first gym
-    if (!m_gyms.isEmpty() && m_selectedGymId < 0) {
-        int firstId = m_gyms.first().toMap()["id"].toInt();
-        m_selectedGymId = firstId;
-        emit selectedGymIdChanged();
-        reloadSlots();
-    }
+    emit gymsChanged();
 }
 
 void GymModelView::onSlotsLoaded(const QJsonObject &data) {
     endRequest();
 
-    static const QStringList dayNames = {
-        "", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"
-    };
+    // because dayOfWeek() returns [1;7] (returns 0 if date is not valid)
+    static const QStringList dayNames = {"",   "ПН", "ВТ", "СР",
+                                         "ЧТ", "ПТ", "СБ", "ВС"};
 
     QJsonArray slotsArray = data["slots"].toArray();
     m_slots.clear();
+
     for (const QJsonValue &val : slotsArray) {
         QJsonObject slotObj = val.toObject();
         QVariantMap slot;
-        slot["id"] = slotObj["slot_id"].toString();
-        slot["section_name"] = slotObj["section_name"].toString();
-        slot["time"] = slotObj["time"].toString();
-        slot["occupied"] = slotObj["occupied"].toInt();
-        slot["capacity"] = slotObj["capacity"].toInt();
-        slot["isBooked"] = slotObj["is_booked"].toBool();
-        slot["inQueue"] = slotObj["in_queue"].toBool();
-        slot["queuePosition"] = slotObj["queue_position"].toInt();
 
-        QString dateStr = slotObj["date"].toString();
-        QDate date = QDate::fromString(dateStr, "yyyy-MM-dd");
-        if (date.isValid()) {
-            int dow = date.dayOfWeek(); 
-            slot["dayOfWeek"] = dow < dayNames.size() ? dayNames[dow] : "";
-            slot["date"] = date.toString("d MMM");
-        } else {
-            slot["dayOfWeek"] = "";
-            slot["date"] = dateStr;
+        slot["id"] = slotObj["slotId"].toString();
+        slot["capacity"] = slotObj["capacity"].toInt();
+        slot["participantsCount"] = slotObj["participantsCount"].toInt();
+
+        QDateTime startDateTime =
+            QDateTime::fromString(slotObj["startTime"].toString(), Qt::ISODate);
+
+        if (startDateTime.isValid()) {
+            QDate date = startDateTime.date();
+            int dow = date.dayOfWeek();
+
+            slot["dayOfWeek"] = dayNames[dow];
+            slot["dateDisplay"] = date.toString("d MMM");
+            slot["timeDisplay"] =
+                startDateTime.time().toString("HH:mm");
+
+            slot["isoDate"] = date.toString("yyyy-MM-dd");
         }
+
+        slot["participants"] = slotObj["participants"].toArray().toVariantList();
 
         m_slots.append(slot);
     }
@@ -143,7 +143,7 @@ void GymModelView::onBookingFinished(const QJsonObject &data) {
     endRequest();
     QString msg = data["message"].toString("Готово");
     emit actionSuccess(msg);
-    reloadSlots();
+    loadSlots(m_selectedGymId);
 }
 
 void GymModelView::onStatsLoaded(const QJsonObject &data) {

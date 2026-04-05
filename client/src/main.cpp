@@ -6,6 +6,7 @@
 #include "AuthModelView.h"
 #include "GymModel.h"
 #include "GymModelView.h"
+#include "SlotModel.h"
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -14,15 +15,18 @@ int main(int argc, char *argv[]) {
 
     AuthModel *authModel = new AuthModel(networkManager, &app);
 
-    AuthModelView *authViewModel = new AuthModelView(authModel, &app);
+    AuthModelView *authModelView= new AuthModelView(authModel, &app);
 
     GymModel *gymModel = new GymModel(networkManager, &app);
 
-    GymModelView *gymViewModel = new GymModelView(gymModel, &app);
+    SlotModel *slotModel = new SlotModel(networkManager, &app);
+
+    GymModelView *gymModelView = new GymModelView(gymModel, slotModel, &app);
 
     QQmlApplicationEngine engine;
 
-    engine.rootContext()->setContextProperty("authVM", authViewModel);
+    engine.rootContext()->setContextProperty("authMV", authModelView);
+    engine.rootContext()->setContextProperty("gymMV", gymModelView);
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/client/qml/AuthView.qml"));
 

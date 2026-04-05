@@ -1,6 +1,7 @@
 #ifndef BASEAPIMODEL_H
 #define BASEAPIMODEL_H
 
+#include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QObject>
 #include "enumToken.h"
@@ -18,14 +19,13 @@ public:
 protected:
     QNetworkAccessManager *m_manager;
 
-    static QString getUserId(){
+    static QString getUserId() {
         return m_userId;
     };
 
-    static void setUserId(const QString& userId){
+    static void setUserId(const QString &userId) {
         m_userId = userId;
     };
-
 
     QNetworkReply *sendPostRequest(
         const QString &path,
@@ -33,18 +33,26 @@ protected:
         Token withToken
     );
 
-    QNetworkReply *sendGetRequest(
+    QNetworkReply *sendDeleteRequest(
         const QString &path,
+        const QJsonObject &json,
         Token withToken
     );
 
+    QNetworkReply *sendGetRequest(const QString &path, Token withToken);
+
     QString handleReplyError(QNetworkReply *reply);
+
+    void handleReply(
+        QNetworkReply *reply,
+        std::function<void(const QJsonObject &)> onSuccess,
+        std::function<void(const QString &)> onError
+    );
 
 private:
     static QString m_accessToken;
     static QString m_refreshToken;
     static QString m_userId;
-    static QString m_userName;
 };
 
 #endif  // BASEAPIMODEL_H

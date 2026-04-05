@@ -390,6 +390,17 @@ paths:
           schema:
             $ref: '#/components/schemas/SlotId'
           description: ID слота
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  $ref: '#/components/schemas/UserId'
       responses:
         '204':
           description: Успешная запись
@@ -401,7 +412,7 @@ paths:
                 $ref: '#/components/schemas/Error'
 
     delete:
-      summary: Удалить запись пользователя
+      summary: Удалить запись пользователя  
       operationId: deleteUserEntry
       parameters:
         - name: slot-id
@@ -410,6 +421,17 @@ paths:
           schema:
             $ref: '#/components/schemas/SlotId'
           description: ID слота
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  $ref: '#/components/schemas/UserId'
       responses:
         '204':
           description: Запись успешно удалена

@@ -13,18 +13,9 @@ public:
     explicit SlotRoutes(std::shared_ptr<Database> db) : db_slots(std::move(db)) {
     }
 
-    crow::response getSlots(const std::string& slot_id) const {
-        ResponseBuilder response;
-        auto res = db_slots.getSlotInfo(slot_id)[0];
-        for (std::string field : {
-                 "slot_id", "section_id", "section_name",
-                 "enrolled", "start_time", "end_time"
-             }) {
-            response.addField(field, res[field].as<std::string>());
-             }
-        response.addField("capacity", res["capacity"].as<int>());
-        response.addField("is_cancelled", res["is_cancelled"].as<bool>());
-        return response.build();
+    crow::response slotInfo(const std::string& slot_id) const {
+        auto res = db_slots.getSlotInfoJSON(slot_id);
+        return {res};
     }
 
     crow::response patchSlot(const crow::request& req, const std::string& slot_id) {
@@ -70,7 +61,7 @@ public:
         CROW_ROUTE(app, "/v1/slots/<string>")
                 .methods("GET"_method)(
                     [this](const crow::request &req, const std::string &slot_id) {
-                        return getSlots(slot_id);
+                        return slotInfo(slot_id);
                     });
 
         CROW_ROUTE(app, "/v1/slots/<string>")

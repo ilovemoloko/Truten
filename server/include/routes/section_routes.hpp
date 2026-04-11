@@ -17,11 +17,22 @@ public:
         return {std::move(final)};
     }
 
+    [[nodiscard]] crow::response getGymSlots(const std::string& gym_id) const {
+        auto slots = db_slot.getGymSlots(gym_id);
+        crow::json::wvalue final = std::move(slots);
+        return {std::move(final)};
+    }
+
     void registerRoutes(crow::SimpleApp &app) {
         CROW_ROUTE(app, "/v1/sections/gymList")(
             // TODO: add campus selection
             [this](const crow::request &req) {
                 return getGyms();
+            });
+
+        CROW_ROUTE(app, "/v1/sections/<string>/slots")(
+            [this](const crow::request& req, const std::string& gym_id) {
+                return getGymSlots(gym_id);
             });
     }
 

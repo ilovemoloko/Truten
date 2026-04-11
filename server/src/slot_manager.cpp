@@ -10,8 +10,8 @@ void SlotManager::changeSlotInfo(const std::string &id,
                                  const std::string &start_time,
                                  const std::string &end_time, int capacity) {
     db->execute("UPDATE slots SET capacity = $1, start_time = $2, end_time = "
-                    "$3 WHERE ID = $4",
-                    capacity, start_time, end_time, id);
+                "$3 WHERE ID = $4",
+                capacity, start_time, end_time, id);
 }
 
 void SlotManager::removeEntry(const std::string &user_id,
@@ -42,4 +42,54 @@ std::vector<crow::json::wvalue> SlotManager::getGymList() const {
         response.push_back(std::move(tmp));
     }
     return response;
+}
+
+std::vector<crow::json::wvalue> SlotManager::loadParticipants(const pqxx::field& field) {
+    std::vector<crow::json::wvalue> participants;
+    auto enrolled_array = field.as_array();
+    std::pair<pqxx::array_parser::juncture, std::string> elem;
+    do {
+        elem = enrolled_array.get_next();
+        if (elem.first == pqxx::array_parser::juncture::string_value) {
+            crow::json::wvalue tmp;
+            tmp["id"] = elem.second;
+            tmp["name"] = "TODO ADD NAMES SOMEHOW";
+            participants.push_back(std::move(tmp));
+        }
+    } while (elem.first != pqxx::array_parser::juncture::done);
+    return participants;
+}
+
+std::vector<crow::json::wvalue> SlotManager::getGymSlots(const std::string &gym_id) const {
+    std::vector<crow::json::wvalue> response;
+    const auto res = db->execute("SELECT ID, start_time, end_time, capacity, enrolled FROM slots WHERE section_id = $1",
+                                 gym_id);
+    for (auto rw : res) {
+        crow::json::wvalue to_push;
+        std::vector<crow::json::wvalue> participants = loadParticipants(rw[4]);
+        to_push["slotId"] = rw[0].as<std::string>();
+        to_push["startTime"] = rw[1].as<std::string>();
+        to_push["endTime"] = rw[2].as<std::string>();
+        to_push["capacity"] = rw[3].as<short>();
+        to_push["participants"] = std::move(participants);
+        response.push_back(std::move(to_push));
+    }
+    return response;
+}
+
+crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id) const {
+    auto res = getSlotInfo(slot_id)[0];
+    crow::json::wvalue to_return;
+    auto participants = loadParticipants(res[4]);
+    //kill me
+    to_return["slotId"] = res[0].as<std::string>();
+    to_return["gymId"] = res[1].as<std::string>();
+    to_return["gymName"] = res[2].as<std::string>();
+    to_return["capacity"] = res[3].as<short>();
+    to_return["participantsCount"] = static_cast<short>(participants.size());
+    to_return["participants"] = std::move(participants);
+    to_return["startTime"] = res[5].as<std::string>();
+    to_return["endTime"] = res[6].as<std::string>();
+    return to_return;
+
 }

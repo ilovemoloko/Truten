@@ -24,6 +24,12 @@ public:
     [[nodiscard]] pqxx::result getSlotInfo(const std::string &id) const;
 
     [[nodiscard]] std::vector<crow::json::wvalue> getGymList() const;
+
+    [[nodiscard]] static std::vector<crow::json::wvalue> loadParticipants(const pqxx::row::reference & field);
+
+    [[nodiscard]] std::vector<crow::json::wvalue> getGymSlots(const std::string& gym_id) const;
+
+    [[nodiscard]] crow::json::wvalue getSlotInfoJSON(const std::string& slot_id) const;
 private:
     std::shared_ptr<Database> db;
 };

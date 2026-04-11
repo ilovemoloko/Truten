@@ -1,15 +1,8 @@
 #ifndef TRUTEN_SERVER_SLOT_MANAGER_HPP
 #define TRUTEN_SERVER_SLOT_MANAGER_HPP
 #include "database.hpp"
-
-
-//it's only ever used in "get gym list"
-//i guess it makes sense for this struct to
-//be here
-struct GymList {
-    std::vector<std::string> gyms, ids;
-};
-
+#include <vector>
+#include "crow.h"
 
 // I suppose you can guess what it does by the name. Come on. We're not
 // 5-year-olds here. Go on.
@@ -30,7 +23,7 @@ public:
 
     [[nodiscard]] pqxx::result getSlotInfo(const std::string &id) const;
 
-    [[nodiscard]] GymList getGymList() const;
+    [[nodiscard]] std::vector<crow::json::wvalue> getGymList() const;
 private:
     std::shared_ptr<Database> db;
 };

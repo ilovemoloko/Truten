@@ -32,12 +32,14 @@ void SlotManager::closeSlot(const std::string &id) {
     db->execute("UPDATE slots SET is_cancelled = TRUE WHERE ID = $1", id);
 }
 
-GymList SlotManager::getGymList() const {
-    GymList response;
+std::vector<crow::json::wvalue> SlotManager::getGymList() const {
+    std::vector<crow::json::wvalue> response;
     const auto res = db->execute("SELECT name, id FROM gyms");
-    for (auto i : res) {
-        response.gyms.push_back(i[0].as<std::string>());
-        response.ids.push_back(i[1].as<std::string>());
+    for (auto rw : res) {
+        crow::json::wvalue tmp;
+        tmp["name"] = rw[0].as<std::string>();
+        tmp["id"] = rw[1].as<std::string>();
+        response.push_back(std::move(tmp));
     }
     return response;
 }

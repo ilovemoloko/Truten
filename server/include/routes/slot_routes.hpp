@@ -66,14 +66,6 @@ public:
         return ResponseBuilder(request).build();
     }
 
-    crow::response getGymList() const {
-        ResponseBuilder res;
-        auto [gyms, ids] = db_slots.getGymList();
-        res.addField("sections", gyms);
-        res.addField("ids", ids);
-        return res.build();
-    }
-
     void registerRoutes(crow::SimpleApp &app) {
         CROW_ROUTE(app, "/v1/slots/<string>")
                 .methods("GET"_method)(
@@ -104,11 +96,6 @@ public:
                     [this](const crow::request &req, const std::string &slot_id) {
                         return deleteUserEntry(req, slot_id);
                     });
-
-        CROW_ROUTE(app, "/v1/sections/gymList").methods("GET"_method)(
-            [this](const crow::request& req) {
-                return getGymList();
-            });
     }
 
 private:

@@ -50,8 +50,11 @@ public:
     template<typename T>
     ResponseBuilder addField(const std::string &field_name, const T &value) {
         response_body[field_name] = value;
+
         return *this;
     }
+
+
 
     [[nodiscard]] crow::response build() {
         return {status_code, response_body.dump()};

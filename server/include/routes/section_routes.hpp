@@ -13,7 +13,9 @@ public:
 
     [[nodiscard]] crow::response getGyms() const {
         auto gyms = db_slot.getGymList();
-        crow::json::wvalue final = std::move(gyms);
+        crow::json::wvalue gym_list = std::move(gyms);
+        crow::json::wvalue final;
+        final["sections"] = std::move(gym_list);
         return {std::move(final)};
     }
 

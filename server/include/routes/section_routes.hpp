@@ -24,6 +24,7 @@ public:
         crow::json::wvalue slot_list = std::move(slots);
         crow::json::wvalue final;
         final["slots"] = std::move(slot_list);
+
         return {std::move(final)};
     }
 

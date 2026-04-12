@@ -9,7 +9,7 @@ GymModel::GymModel(QNetworkAccessManager *manager, QObject *parent)
 
 void GymModel::fetchGyms() {
     QNetworkReply *reply =
-        sendGetRequest("/sections/GymList", Token::WITHOUT_TOKEN);
+        sendGetRequest("/sections/gymList", Token::WITHOUT_TOKEN);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(
             reply, [this](const QJsonObject &json) { emit gymsLoaded(json); },

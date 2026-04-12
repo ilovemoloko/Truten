@@ -56,8 +56,8 @@ void GymModelView::init() {
     m_errorMessage.clear();
     emit errorMessageChanged();
 
-    beginRequest();
-    m_gymModel->fetchUserStats();
+    // beginRequest();
+    // m_gymModel->fetchUserStats(); // stats for mvp
 
     beginRequest();
     m_gymModel->fetchGyms();
@@ -133,6 +133,7 @@ void GymModelView::onSlotsLoaded(const QJsonObject &data) {
         }
 
         slot["participants"] = slotObj["participants"].toArray().toVariantList();
+        // TODO: add set of slotsID that are booked by client logic
 
         m_slots.append(slot);
     }

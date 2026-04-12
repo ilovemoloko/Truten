@@ -93,14 +93,14 @@ void BaseModel::handleReply(
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     QByteArray rawData = reply->readAll();
 
-    if (rawData.isEmpty() || rawData == "null") {
+    if ((statusCode >= 300 || statusCode < 200) && (rawData.isEmpty() || rawData == "null")) {
         emit onError("Сервер вернул ошибку: " + QString::number(statusCode));
         return;
     }
 
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(rawData, &parseError);
-    if (parseError.error != QJsonParseError::NoError) {
+    if (parseError.error != QJsonParseError::NoError && (statusCode >= 300 || statusCode < 200)) {
         emit onError("Ошибка разбора ответа сервера");
         return;
     }

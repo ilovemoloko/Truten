@@ -10,6 +10,8 @@ Page {
         gymMV.init()
     }
 
+    // TODO: finish book logic and admin view
+
     Connections {
         target: gymMV
         function onActionSuccess(message) {
@@ -27,6 +29,7 @@ Page {
 
             Button {
                 text: "<"
+
                 visible: mainLayout.currentIndex === 1
                 background: Rectangle {
                     color: "transparent"

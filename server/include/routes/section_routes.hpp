@@ -21,7 +21,9 @@ public:
 
     [[nodiscard]] crow::response getGymSlots(const std::string& gym_id) const {
         auto slots = db_slot.getGymSlots(gym_id);
-        crow::json::wvalue final = std::move(slots);
+        crow::json::wvalue slot_list = std::move(slots);
+        crow::json::wvalue final;
+        final["slots"] = std::move(slot_list);
         return {std::move(final)};
     }
 

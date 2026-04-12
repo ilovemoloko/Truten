@@ -27,7 +27,6 @@ Page {
 
             Button {
                 text: "<"
-                text: "<"
                 visible: mainLayout.currentIndex === 1
                 background: Rectangle {
                     color: "transparent"

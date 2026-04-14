@@ -59,3 +59,8 @@ void UserManager::addEnrollment(const std::string &user_id, const std::string &s
 void UserManager::removeEnrollment(const std::string &user_id, const std::string &slot_id) {
     db->execute("UPDATE users SET enrolled_slots = array_remove(enrolled_slots, $1) WHERE ID = $2", slot_id, user_id);
 }
+
+std::string UserManager::getNameById(const std::string &user_id) const {
+    const auto res = db->execute("SELECT name FROM users WHERE id = $1", user_id)[0][0];
+    return res.as<std::string>();
+}

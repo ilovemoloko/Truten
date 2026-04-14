@@ -26,7 +26,7 @@ public:
         const auto email = static_cast<std::string>(request["email"]);
         const auto password = static_cast<std::string>(request["password"]);
         const auto name = static_cast<std::string>(request["name"]);
-        const bool is_admin = static_cast<bool>(request["isAdmin"]);
+        const bool is_admin = request["isAdmin"].b();
         if (db_auth.emailExists(email)) {
             return ResponseBuilder(RESPONSE_CODE::INVALID).build();
         }

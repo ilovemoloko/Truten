@@ -44,7 +44,13 @@ std::vector<crow::json::wvalue> SlotManager::getGymList() const {
     return response;
 }
 
-std::vector<crow::json::wvalue> SlotManager::loadParticipants(const pqxx::field& field) {
+std::string SlotManager::getNameById(const std::string &user_id) const {
+    const auto res = db->execute("SELECT name FROM users WHERE id = $1", user_id)[0][0];
+    return res.as<std::string>();
+}
+
+
+std::vector<crow::json::wvalue> SlotManager::loadParticipants(const pqxx::field& field) const {
     std::vector<crow::json::wvalue> participants;
     auto enrolled_array = field.as_array();
     std::pair<pqxx::array_parser::juncture, std::string> elem;
@@ -52,8 +58,9 @@ std::vector<crow::json::wvalue> SlotManager::loadParticipants(const pqxx::field&
         elem = enrolled_array.get_next();
         if (elem.first == pqxx::array_parser::juncture::string_value) {
             crow::json::wvalue tmp;
-            tmp["id"] = elem.second;
-            tmp["name"] = "TODO ADD NAMES SOMEHOW";
+            const std::string id = elem.second;
+            tmp["id"] = id;
+            tmp["name"] = getNameById(id);
             participants.push_back(std::move(tmp));
         }
     } while (elem.first != pqxx::array_parser::juncture::done);
@@ -92,4 +99,39 @@ crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id) cons
     to_return["endTime"] = res[6].as<std::string>();
     return to_return;
 
+}
+
+void SlotManager::addAdminToGym(const std::string gym_id, const std::string &new_admin) {
+    db->execute("UPDATE gyms SET admins = array_append(admins, $1) WHERE id = $2", new_admin, gym_id);
+}
+
+void SlotManager::createGym(const std::string &gym_name, const std::string &creator_id) {
+    auto res = db->execute("INSERT INTO gyms(name) VALUES ($1) RETURNING id", gym_name);
+    auto gym_id = res[0][0].as<std::string>();
+    addAdminToGym(gym_id, creator_id);
+}
+
+
+std::vector<crow::json::wvalue> SlotManager::getGymAdmins(const std::string &gym_id) const {
+    std::vector<crow::json::wvalue> to_return;
+    auto admins = db->execute("SELECT admins FROM gyms WHERE id = $1", gym_id)[0][0];
+    auto admins_array = admins.as_array();
+    std::pair<pqxx::array_parser::juncture, std::string> elem;
+    do {
+        elem = admins_array.get_next();
+        if (elem.first == pqxx::array_parser::juncture::string_value) {
+            crow::json::wvalue tmp;
+            tmp["id"] = elem.second;
+            tmp["name"] = getNameById(elem.second);
+            to_return.push_back(std::move(tmp));
+        }
+    } while (elem.first != pqxx::array_parser::juncture::done);
+    return to_return;
+}
+
+
+void SlotManager::createSlot(const std::string &gym_id, std::string &time_begin, std::string &time_end) {
+    auto gym_name_q = db->execute("SELECT section_name FROM gyms WHERE id = $1", gym_id)[0][0];
+    auto gym_name = gym_name_q.as<std::string>();
+    db->execute("INSERT INTO SLOTS(section_id, section_name start_time, end_time) VALUES($1, $2, $3, $4)", gym_id, gym_name, time_begin, time_end);
 }

@@ -25,11 +25,21 @@ public:
 
     [[nodiscard]] std::vector<crow::json::wvalue> getGymList() const;
 
-    [[nodiscard]] static std::vector<crow::json::wvalue> loadParticipants(const pqxx::row::reference & field);
+    [[nodiscard]] std::vector<crow::json::wvalue> loadParticipants(const pqxx::row::reference & field) const;
 
     [[nodiscard]] std::vector<crow::json::wvalue> getGymSlots(const std::string& gym_id) const;
 
     [[nodiscard]] crow::json::wvalue getSlotInfoJSON(const std::string& slot_id) const;
+
+    void createGym(const std::string& gym_name, const std::string& creator_id);
+
+    void createSlot(const std::string& gym_id, std::string& time_begin, std::string& time_end);
+
+    void addAdminToGym(const std::string gym_id, const std::string& new_admin);
+
+    [[nodiscard]] std::vector<crow::json::wvalue> getGymAdmins(const std::string& gym_id) const;
+
+    std::string getNameById(const std::string& user_id) const;
 private:
     std::shared_ptr<Database> db;
 };

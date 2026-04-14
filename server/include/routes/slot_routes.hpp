@@ -19,6 +19,21 @@ public:
         return {res};
     }
 
+    crow::response createSlot(const crow::request& req) {
+        RequestHandler request(req);
+        request.require("startTime");
+        request.require("endTime");
+        request.require("gymId");
+        if (!request.responseIsOk()) {
+            return ResponseBuilder(request).build();
+        }
+        auto start = static_cast<std::string>(request["startTime"]);
+        auto end = static_cast<std::string>(request["endTime"]);
+        auto gym_id = static_cast<std::string>(request["gymId"]);
+        db_slots.createSlot(gym_id, start, end);
+        return ResponseBuilder().build();
+    }
+
     crow::response patchSlot(const crow::request& req, const std::string& slot_id) {
         RequestHandler request(req);
         request.require("startTime", crow::json::type::String);
@@ -93,6 +108,12 @@ public:
                     [this](const crow::request &req, const std::string &slot_id) {
                         return deleteUserEntry(req, slot_id);
                     });
+
+        CROW_ROUTE(app, "/v1/slots")
+        .methods("POST"_method)(
+            [this](const crow::request &req) {
+                return createSlot(req);
+            });
     }
 
 private:

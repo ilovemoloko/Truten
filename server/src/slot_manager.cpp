@@ -59,8 +59,8 @@ std::vector<crow::json::wvalue> SlotManager::loadParticipants(const pqxx::field&
         if (elem.first == pqxx::array_parser::juncture::string_value) {
             crow::json::wvalue tmp;
             const std::string id = elem.second;
-            tmp["id"] = id;
-            tmp["name"] = getNameById(id);
+            tmp["userId"] = id;
+            tmp["userName"] = getNameById(id);
             participants.push_back(std::move(tmp));
         }
     } while (elem.first != pqxx::array_parser::juncture::done);
@@ -121,8 +121,8 @@ std::vector<crow::json::wvalue> SlotManager::getGymAdmins(const std::string &gym
         elem = admins_array.get_next();
         if (elem.first == pqxx::array_parser::juncture::string_value) {
             crow::json::wvalue tmp;
-            tmp["id"] = elem.second;
-            tmp["name"] = getNameById(elem.second);
+            tmp["userId"] = elem.second;
+            tmp["userName"] = getNameById(elem.second);
             to_return.push_back(std::move(tmp));
         }
     } while (elem.first != pqxx::array_parser::juncture::done);

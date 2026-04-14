@@ -38,6 +38,7 @@ void Database::init() {
         "name TEXT,"
         "password_hash TEXT,"
         "is_admin BOOLEAN DEFAULT FALSE,"
+        "enrolled_slots UUID[],"
         "unban_time TIMESTAMP)");
 
     txn.exec("CREATE TABLE IF NOT EXISTS slots ("

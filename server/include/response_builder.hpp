@@ -57,6 +57,11 @@ public:
 
 
     [[nodiscard]] crow::response build() {
+        //for whatever reason QT treats empty responses as errors.
+        //gotta think of a workaround. ATM this works.
+        if (status_code == *RESPONSE_CODE::OK || status_code == *RESPONSE_CODE::OK_EMPTY) {
+            response_body["success"] = true;
+        }
         return {status_code, response_body.dump()};
     }
 

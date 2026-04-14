@@ -22,6 +22,12 @@ public:
 
     [[nodiscard]] int getUnbanTime(const std::string &id) const;
 
+    std::vector<std::string> getUserEnrollments(const std::string& user_id) const;
+
+    void addEnrollment(const std::string& user_id, const std::string& slot_id);
+
+    void removeEnrollment(const std::string& user_id, const std::string& slot_id);
+
     void deleteUser(const std::string &id);
 
 private:

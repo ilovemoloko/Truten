@@ -22,7 +22,7 @@ public:
     [[nodiscard]] bool emailExists(const std::string &email) const;
 
     void createUser(const std::string &email, const std::string &password,
-                    const std::string &name);
+                    const std::string &name, bool is_admin);
 private:
     std::shared_ptr<Database> db;
 };

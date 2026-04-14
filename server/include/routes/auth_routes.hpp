@@ -19,13 +19,18 @@ public:
         request.require("email", String);
         request.require("password", String);
         request.require("name", String);
+        request.require("isAdmin");
         if (!request.responseIsOk()) {
             return ResponseBuilder(request).build();
         }
         const auto email = static_cast<std::string>(request["email"]);
         const auto password = static_cast<std::string>(request["password"]);
         const auto name = static_cast<std::string>(request["name"]);
-        db_auth.createUser(email, password, name);
+        const bool is_admin = static_cast<bool>(request["isAdmin"]);
+        if (db_auth.emailExists(email)) {
+            return ResponseBuilder(RESPONSE_CODE::INVALID).build();
+        }
+        db_auth.createUser(email, password, name, is_admin);
         const std::string user_id = db_auth.getUserIdByEmail(email);
         return ResponseBuilder(RESPONSE_CODE::OK).addField("userId", user_id).build();
     }

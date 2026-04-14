@@ -61,6 +61,13 @@ public:
         return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
     }
 
+    crow::response getUserEnrollments(const std::string& id) {
+        const auto res = db_user.getUserEnrollments(id);
+        ResponseBuilder response;
+        response.addField("enrollments", res);
+        return response.build();
+    }
+
     void registerRoutes(crow::SimpleApp &app) {
         CROW_ROUTE(app, "/v1/user/<string>/gainedHours")(
             [this](const crow::request &req, const std::string &user_id) {
@@ -94,6 +101,11 @@ public:
                     [this](const crow::request &req, const std::string &id) {
                         return deleteUser(id);
                     });
+
+        CROW_ROUTE(app, "v1/user/<string>/enrollments").methods("GET"_method)(
+            [this](const crow::request& req, const std::string& user_id) {
+                return getUserEnrollments(user_id);
+            });
     }
 
 private:

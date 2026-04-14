@@ -1,19 +1,32 @@
 openapi: 3.0.0
 info:
-  title: Truten API
+  title: Sport Booking API
   version: 1.0.0
-  description: API для системы записи на физру
+  description: API для системы записи в спортивные залы
 
 security:
   - bearerAuth: []
 
+tags:
+  - name: Auth
+    description: Авторизация и управление аккаунтом
+  - name: User
+    description: Управление данными пользователя
+  - name: Slots
+    description: Работа со слотами и записью
+  - name: Sections
+    description: Управление залами
+  - name: Queue
+    description: Управление очередью
+
 servers:
   - url: http://api.example.com/v1
-    description: Production server 
-    
+    description: Production server
+
 paths:
   /user/{user-id}/gainedHours:
     get:
+      tags: [User]
       summary: Получить количество набранных часов студента
       operationId: getGainedHours
       parameters:
@@ -41,6 +54,7 @@ paths:
                 $ref: '#/components/schemas/Error'
 
     post:
+      tags: [User]
       summary: Добавить часы пользователю (админ)
       operationId: addGainedHours
       parameters:
@@ -59,8 +73,7 @@ paths:
                 - hours
               properties:
                 hours:
-                  type: number
-                  format: integer
+                  type: integer
                   description: Количество часов для добавления
       responses:
         '204':
@@ -84,8 +97,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /user/{user-id}/enrollments:
+    get:
+      tags: [User]
+      summary: Получить все записи пользователя
+      operationId: getUserEnrollments
+      parameters:
+        - name: user-id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enrollments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SlotId'
+                    description: Список ID слотов, на которые записан пользователь
+        '404':
+          description: Пользователь не существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /user/{user-id}/isBanned:
     post:
+      tags: [User]
       summary: Заблокировать пользователя (админ)
       operationId: banUser
       parameters:
@@ -134,6 +179,7 @@ paths:
 
   /user/{user-id}/unbanTime:
     get:
+      tags: [User]
       summary: Получить время разблокировки пользователя
       operationId: getUnbanTime
       parameters:
@@ -163,6 +209,7 @@ paths:
 
   /user/{user-id}/stats:
     get:
+      tags: [User]
       summary: Получить статистику по залам
       operationId: getUserStats
       parameters:
@@ -182,9 +229,8 @@ paths:
                   gyms:
                     type: object
                     additionalProperties:
-                      type: string
-                      format: date-time
-                      description: Время в часах
+                      type: integer
+                      description: Количество часов, проведенных в зале
                     description: Статистика по залам
         '404':
           description: Пользователь не существует
@@ -195,6 +241,7 @@ paths:
 
   /sections/gymList:
     get:
+      tags: [Sections]
       summary: Получить список доступных залов
       operationId: getGymList
       responses:
@@ -208,17 +255,65 @@ paths:
                   sections:
                     type: array
                     items:
-                      type: string
-                    description: Названия залов
-                  ids:
-                    type: array
-                    items:
-                      type: string
-                      format: uuid
-                    description: UUID залов
+                      type: object
+                      required:
+                        - id
+                        - name
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                          description: Название зала
+
+    post:
+      tags: [Sections]
+      summary: Добавить новый зал (админ)
+      operationId: createGym
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - gymName
+                - creatorId
+              properties:
+                gymName:
+                  type: string
+                  description: Название нового зала
+                creatorId:
+                  $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Зал успешно создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gymId:
+                    type: string
+                    format: uuid
+                    description: ID созданного зала
+        '400':
+          description: Некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Недостаточно прав или неверный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /sections/{gym-id}/slots:
     get:
+      tags: [Sections]
       summary: Получить список слотов для зала
       operationId: getGymSlots
       parameters:
@@ -271,8 +366,143 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /sections/{gym-id}/admins:
+    get:
+      tags: [Sections]
+      summary: Получить список администраторов зала
+      operationId: getGymAdmins
+      parameters:
+        - name: gym-id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID зала
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  admins:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Participant'
+                    description: Список администраторов зала
+        '404':
+          description: Зал не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Sections]
+      summary: Добавить администратора зала (админ)
+      operationId: addGymAdmin
+      parameters:
+        - name: gym-id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID зала
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  $ref: '#/components/schemas/UserId'
+      responses:
+        '204':
+          description: Администратор успешно добавлен
+        '403':
+          description: Недостаточно прав или неверный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Зал или пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /slots:
+    post:
+      tags: [Slots]
+      summary: Создать новый слот (админ)
+      operationId: createSlot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - startTime
+                - endTime
+                - gymId
+                - capacity
+              properties:
+                startTime:
+                  type: string
+                  format: date-time
+                  description: Время начала слота
+                endTime:
+                  type: string
+                  format: date-time
+                  description: Время окончания слота
+                gymId:
+                  type: string
+                  format: uuid
+                  description: ID зала
+                capacity:
+                  type: integer
+                  minimum: 1
+                  description: Вместимость слота
+      responses:
+        '200':
+          description: Слот успешно создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slotId:
+                    $ref: '#/components/schemas/SlotId'
+        '400':
+          description: Некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Недостаточно прав или неверный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Зал не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /slots/{slot-id}:
     get:
+      tags: [Slots]
       summary: Получить информацию о слоте
       operationId: getSlotInfo
       parameters:
@@ -297,7 +527,7 @@ paths:
                   gymName:
                     type: string
                   startTime:
-                    type: string  
+                    type: string
                     format: date-time
                     description: Время начала
                   endTime:
@@ -322,6 +552,7 @@ paths:
                 $ref: '#/components/schemas/Error'
 
     delete:
+      tags: [Slots]
       summary: Закрыть слот для записи
       operationId: closeSlot
       parameters:
@@ -341,6 +572,7 @@ paths:
                 $ref: '#/components/schemas/Error'
 
     patch:
+      tags: [Slots]
       summary: Изменить информацию о слоте (админ)
       operationId: updateSlotInfo
       parameters:
@@ -378,6 +610,7 @@ paths:
 
   /slots/{slot-id}/entries:
     post:
+      tags: [Slots]
       summary: Записаться в слот
       operationId: registerForSlot
       parameters:
@@ -387,6 +620,17 @@ paths:
           schema:
             $ref: '#/components/schemas/SlotId'
           description: ID слота
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  $ref: '#/components/schemas/UserId'
       responses:
         '204':
           description: Успешная запись
@@ -396,8 +640,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
     delete:
+      tags: [Slots]
       summary: Удалить запись пользователя
       operationId: deleteUserEntry
       parameters:
@@ -407,6 +651,17 @@ paths:
           schema:
             $ref: '#/components/schemas/SlotId'
           description: ID слота
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  $ref: '#/components/schemas/UserId'
       responses:
         '204':
           description: Запись успешно удалена
@@ -419,6 +674,7 @@ paths:
 
   /queue/{slot-id}/join:
     post:
+      tags: [Queue]
       summary: Встать в очередь на слот
       operationId: joinQueue
       parameters:
@@ -433,6 +689,7 @@ paths:
 
   /queue/{slot-id}/leave:
     post:
+      tags: [Queue]
       summary: Выйти из очереди на слот
       operationId: leaveQueue
       parameters:
@@ -447,6 +704,7 @@ paths:
 
   /auth/createAccount:
     post:
+      tags: [Auth]
       operationId: createAccount
       security: []
       requestBody:
@@ -483,6 +741,7 @@ paths:
 
   /auth/login:
     post:
+      tags: [Auth]
       summary: Login to account
       operationId: login
       security: []
@@ -524,6 +783,7 @@ paths:
 
   /auth/refresh:
     post:
+      tags: [Auth]
       summary: Update tokens
       operationId: refreshTokens
       security: []
@@ -559,6 +819,7 @@ paths:
 
   /user/account:
     delete:
+      tags: [Auth]
       summary: Удалить аккаунт
       operationId: deleteAccount
       requestBody:
@@ -620,6 +881,9 @@ components:
         error:
           type: string
           description: Сообщение об ошибке
+        code:
+          type: integer
+          description: Код ошибки
       required:
         - error
         - code

@@ -102,7 +102,7 @@ public:
                         return deleteUser(id);
                     });
 
-        CROW_ROUTE(app, "v1/user/<string>/enrollments").methods("GET"_method)(
+        CROW_ROUTE(app, "/v1/user/<string>/enrollments").methods("GET"_method)(
             [this](const crow::request& req, const std::string& user_id) {
                 return getUserEnrollments(user_id);
             });

@@ -20,22 +20,22 @@ public:
         request.require("email", String);
         request.require("password", String);
         request.require("name", String);
-        request.require("isAdmin");
         if (!request.responseIsOk()) {
             return ResponseBuilder(request).build();
         }
         const auto email = static_cast<std::string>(request["email"]);
         const auto password = static_cast<std::string>(request["password"]);
         const auto name = static_cast<std::string>(request["name"]);
-        const bool is_admin = request["isAdmin"].b();
         if (db_auth.emailExists(email)) {
             return ResponseBuilder(RESPONSE_CODE::INVALID).build();
         }
-        db_auth.createUser(email, password, name, is_admin);
+        db_auth.createUser(email, password, name);
         const std::string user_id = db_auth.getUserIdByEmail(email);
         ResponseBuilder resp;
         resp.addField("userId", user_id);
-        resp.addField("isAdmin", is_admin);
+        //everybody is non-admin at first
+        //left here for simpler client code
+        resp.addField("isAdmin", false);
         return resp.build();
     }
 

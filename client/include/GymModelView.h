@@ -87,6 +87,9 @@ private:
     GymModel *m_gymModel;
     SlotModel *m_slotModel;
 
+    // TODO: add set of slotsID that are booked by client
+    // maybe QSet<QString> bookedIds;
+
     bool m_isLoading = false;
     QString m_errorMessage;
     QVariantList m_gyms;

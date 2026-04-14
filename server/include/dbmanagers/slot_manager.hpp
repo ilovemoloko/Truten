@@ -33,7 +33,7 @@ public:
 
     void createGym(const std::string& gym_name, const std::string& creator_id);
 
-    void createSlot(const std::string& gym_id, std::string& time_begin, std::string& time_end);
+    void createSlot(const std::string& gym_id, std::string& time_begin, std::string& time_end, const int capacity);
 
     void addAdminToGym(const std::string gym_id, const std::string& new_admin);
 

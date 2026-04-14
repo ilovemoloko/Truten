@@ -24,13 +24,15 @@ public:
         request.require("startTime");
         request.require("endTime");
         request.require("gymId");
+        request.require("capacity");
         if (!request.responseIsOk()) {
             return ResponseBuilder(request).build();
         }
         auto start = static_cast<std::string>(request["startTime"]);
         auto end = static_cast<std::string>(request["endTime"]);
         auto gym_id = static_cast<std::string>(request["gymId"]);
-        db_slots.createSlot(gym_id, start, end);
+        auto capacity = static_cast<int>(request["capacity"]);
+        db_slots.createSlot(gym_id, start, end, capacity);
         return ResponseBuilder().build();
     }
 

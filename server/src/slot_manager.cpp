@@ -133,5 +133,5 @@ std::vector<crow::json::wvalue> SlotManager::getGymAdmins(const std::string &gym
 void SlotManager::createSlot(const std::string &gym_id, std::string &time_begin, std::string &time_end, const int capacity) {
     auto gym_name_q = db->execute("SELECT name FROM gyms WHERE id = $1", gym_id)[0][0];
     auto gym_name = gym_name_q.as<std::string>();
-    db->execute("INSERT INTO SLOTS(section_id, section_name, start_time, end_time, capacity) VALUES($1, $2, $3, $4, $5)", gym_id, gym_name, time_begin, time_end, capacity);
+    db->execute("INSERT INTO slots(section_id, section_name, start_time, end_time, capacity) VALUES($1, $2, $3, $4, $5)", gym_id, gym_name, time_begin, time_end, capacity);
 }

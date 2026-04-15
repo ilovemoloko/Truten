@@ -44,7 +44,7 @@ void Database::init() {
     txn.exec("CREATE TABLE IF NOT EXISTS slots ("
         "ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
         "section_id UUID DEFAULT uuid_generate_v4(),"
-        "section_name TEXT NOT NULL UNIQUE,"
+        "section_name TEXT NOT NULL,"
         "capacity SMALLINT DEFAULT 30,"
         "enrolled UUID[],"
         "start_time TIMESTAMP NOT NULL,"
@@ -53,7 +53,7 @@ void Database::init() {
 
     txn.exec("CREATE TABLE IF NOT EXISTS gyms ("
         "ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
-        "name TEXT NOT NULL,"
+        "name TEXT NOT NULL UNIQUE,"
         "admins UUID[])");
     txn.commit();
 }

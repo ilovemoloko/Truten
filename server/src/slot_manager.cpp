@@ -78,6 +78,7 @@ std::vector<crow::json::wvalue> SlotManager::getGymSlots(const std::string &gym_
         to_push["startTime"] = rw[1].as<std::string>();
         to_push["endTime"] = rw[2].as<std::string>();
         to_push["capacity"] = rw[3].as<short>();
+        to_push["participantsCount"] = static_cast<short>(participants.size());
         to_push["participants"] = std::move(participants);
         response.push_back(std::move(to_push));
     }

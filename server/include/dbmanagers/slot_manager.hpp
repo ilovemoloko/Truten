@@ -25,7 +25,7 @@ public:
 
     [[nodiscard]] std::vector<crow::json::wvalue> getGymList() const;
 
-    [[nodiscard]] std::vector<crow::json::wvalue> loadParticipants(const pqxx::row::reference & field) const;
+    [[nodiscard]] std::vector<crow::json::wvalue> loadUserList(const pqxx::row::reference & field) const;
 
     [[nodiscard]] std::vector<crow::json::wvalue> getGymSlots(const std::string& gym_id) const;
 

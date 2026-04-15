@@ -50,7 +50,7 @@ std::string SlotManager::getNameById(const std::string &user_id) const {
 }
 
 
-std::vector<crow::json::wvalue> SlotManager::loadParticipants(const pqxx::field& field) const {
+std::vector<crow::json::wvalue> SlotManager::loadUserList(const pqxx::field& field) const {
     std::vector<crow::json::wvalue> participants;
     auto enrolled_array = field.as_array();
     std::pair<pqxx::array_parser::juncture, std::string> elem;
@@ -69,17 +69,12 @@ std::vector<crow::json::wvalue> SlotManager::loadParticipants(const pqxx::field&
 
 std::vector<crow::json::wvalue> SlotManager::getGymSlots(const std::string &gym_id) const {
     std::vector<crow::json::wvalue> response;
-    const auto res = db->execute("SELECT ID, start_time, end_time, capacity, enrolled FROM slots WHERE section_id = $1",
+    const auto res = db->execute("SELECT ID FROM slots WHERE section_id = $1",
                                  gym_id);
     for (auto rw : res) {
         crow::json::wvalue to_push;
-        std::vector<crow::json::wvalue> participants = loadParticipants(rw[4]);
-        to_push["slotId"] = rw[0].as<std::string>();
-        to_push["startTime"] = rw[1].as<std::string>();
-        to_push["endTime"] = rw[2].as<std::string>();
-        to_push["capacity"] = rw[3].as<short>();
-        to_push["participantsCount"] = static_cast<short>(participants.size());
-        to_push["participants"] = std::move(participants);
+        const auto slot_id = rw[0].as<std::string>();
+        to_push = getSlotInfoJSON(slot_id);
         response.push_back(std::move(to_push));
     }
     return response;
@@ -88,7 +83,7 @@ std::vector<crow::json::wvalue> SlotManager::getGymSlots(const std::string &gym_
 crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id) const {
     auto res = getSlotInfo(slot_id)[0];
     crow::json::wvalue to_return;
-    auto participants = loadParticipants(res[4]);
+    auto participants = loadUserList(res[4]);
     //kill me
     to_return["slotId"] = res[0].as<std::string>();
     to_return["gymId"] = res[1].as<std::string>();
@@ -114,19 +109,8 @@ void SlotManager::createGym(const std::string &gym_name, const std::string &crea
 
 
 std::vector<crow::json::wvalue> SlotManager::getGymAdmins(const std::string &gym_id) const {
-    std::vector<crow::json::wvalue> to_return;
     auto admins = db->execute("SELECT admins FROM gyms WHERE id = $1", gym_id)[0][0];
-    auto admins_array = admins.as_array();
-    std::pair<pqxx::array_parser::juncture, std::string> elem;
-    do {
-        elem = admins_array.get_next();
-        if (elem.first == pqxx::array_parser::juncture::string_value) {
-            crow::json::wvalue tmp;
-            tmp["userId"] = elem.second;
-            tmp["userName"] = getNameById(elem.second);
-            to_return.push_back(std::move(tmp));
-        }
-    } while (elem.first != pqxx::array_parser::juncture::done);
+    std::vector<crow::json::wvalue> to_return = loadUserList(admins);
     return to_return;
 }
 
@@ -138,5 +122,15 @@ void SlotManager::createSlot(const std::string &gym_id, std::string &time_begin,
 }
 
 void SlotManager::deleteSlot(const std::string &slot_id) {
+    auto slot_info = getSlotInfo(slot_id)[0];
+    auto participants = loadUserList(slot_info[4]);
+    for (auto &part : participants) {
+        std::string user_id = part["userId"].dump();
+        //sadly .dump() leaves the string in a weird format
+        //like ""a""
+        user_id.pop_back();
+        user_id.erase(user_id.begin());
+        db->execute("UPDATE users SET enrolled_slots = array_remove(enrolled_slots, $1) WHERE ID = $2", slot_id, user_id);
+    }
     db->execute("DELETE FROM slots WHERE id = $1", slot_id);
 }

@@ -7,9 +7,8 @@ AuthModel::AuthModel(QNetworkAccessManager *manager, QObject *parent)
 }
 
 void AuthModel::loginApi(const QString &email, const QString &password) {
-
-    if(!isValidEmail(email)){
-        emit loginApiError("Некорректный формат электронной почты");
+    if (!isValidEmail(email)) {
+        emit loginApiError("С твоей почтой что-то не так...");
         return;
     }
 
@@ -29,9 +28,10 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
     auto deleteReply = qScopeGuard([reply] { reply->deleteLater(); });
 
     if (reply->error() != QNetworkReply::NoError) {
-        emit loginApiError("Network error: " + reply->errorString());
+        emit loginApiError(handleReplyError(reply));
         return;
     }
+
     int statusCode =
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
@@ -41,7 +41,8 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
     if (rawData.isEmpty() || rawData == "null") {
         qDebug() << "Ошибка сервера, код:" << statusCode;
         emit loginApiError(
-            "Сервер вернул ошибку: " + QString::number(statusCode)
+            "ServerError: Сервер вернул пустой ответ. Код: " +
+            QString::number(statusCode)
         );
         return;
     }
@@ -50,32 +51,39 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
     QJsonDocument doc = QJsonDocument::fromJson(rawData, &parseError);
 
     if (parseError.error != QJsonParseError::NoError) {
-        emit loginApiError(
-            "Invalid server response (JSON error): " + parseError.errorString()
-        );
+        qDebug() << "Invalid server response (JSON error): " +
+                        parseError.errorString()
+                 << "\n";
+
+        emit loginApiError("ParseError: Неправильный формат ответа на сервере");
         return;
     }
 
     QJsonObject json = QJsonObject(doc.object());
 
     switch (statusCode) {
-        case 403: {
-            QString serverMessage = json["error"].toString();
-            emit loginApiError("403 error: " + serverMessage);
-            return;
-        }
         case 200: {
             // m_accessToken = json["accessToken"].toString(); add for JWT
             // m_refreshToken = json["refreshToken"].toString();
-            m_userId = json["userId"].toString();
+            setUserId(json["userId"].toString());
+
+            if (json["isAdmin"].toBool()) {
+                setAdmin();
+            } else {
+                removeAdmin();
+            }
+
             emit loginApiFinished(json);
             break;
         }
         default:
-            QString serverMessage = json["error"].toString();
+            qDebug() << "Неизвестный статус код: " +
+                            QString::number(statusCode) +
+                            json["error"].toString()
+                     << '\n';
             emit loginApiError(
-                "Unknown status code: " + QString::number(statusCode) +
-                serverMessage
+                "StatusCodeError: Неизвестный статус код: " +
+                QString::number(statusCode)
             );
             break;
     }
@@ -86,8 +94,8 @@ void AuthModel::createAccountApi(
     const QString &email,
     const QString &password
 ) {
-    if(!isValidEmail(email)){
-        emit createAccountApiError("Некорректный формат электронной почты");
+    if (!isValidEmail(email)) {
+        emit createAccountApiError("С твоей почтой что-то не так...");
         return;
     }
     QJsonObject json;
@@ -107,7 +115,7 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
     auto deleteReply = qScopeGuard([reply] { reply->deleteLater(); });
 
     if (reply->error() != QNetworkReply::NoError) {
-        emit createAccountApiError("Network error: " + reply->errorString());
+        emit createAccountApiError(handleReplyError(reply));
         return;
     }
 
@@ -121,7 +129,7 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
     if (rawData.isEmpty() || rawData == "null") {
         qDebug() << "Ошибка сервера, код:" << statusCode;
         emit loginApiError(
-            "Сервер вернул ошибку: " + QString::number(statusCode)
+            "ServerError: Сервер вернул ошибку: " + QString::number(statusCode)
         );
         return;
     }
@@ -130,8 +138,11 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
     QJsonDocument doc = QJsonDocument::fromJson(rawData, &parseError);
 
     if (parseError.error != QJsonParseError::NoError) {
+        qDebug() << "Invalid server response (JSON error): " +
+                        parseError.errorString()
+                 << "\n";
         emit createAccountApiError(
-            "Invalid server response (JSON error): " + parseError.errorString()
+            "ParseError: Неправильный формат ответа на сервере"
         );
         return;
     }
@@ -142,15 +153,24 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
         case 200: {
             // m_accessToken = json["accessToken"].toString(); add for JWT
             // m_refreshToken = json["refreshToken"].toString();
-            m_userId = json["userId"].toString();
+            setUserId(json["userId"].toString());
+
+            if (json["isAdmin"].toBool()) {
+                setAdmin();
+            } else {
+                removeAdmin();
+            }
+
             emit createAccountApiFinished(json);
             break;
         }
         default:
             QString serverMessage = json["error"].toString();
+            qDebug() << "Unknown status code: " + QString::number(statusCode) +
+                            serverMessage
+                     << '\n';
             emit createAccountApiError(  // if unknow statusCode returns json
-                "Unknown status code: " + QString::number(statusCode) +
-                serverMessage
+                "StatusCodeError: Произошла ошибка на сервере, попробуйте еще"
             );
             break;
     }

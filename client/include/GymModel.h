@@ -10,26 +10,25 @@ class GymModel : public BaseModel {
     Q_OBJECT
 
 public:
-    explicit GymModel(QNetworkAccessManager *manager, QObject *parent = nullptr);
+    explicit GymModel(
+        QNetworkAccessManager *manager,
+        QObject *parent = nullptr
+    );
 
     void fetchGyms();
-    void fetchSlots(int gymId);
-    void bookSlot(int slotId);
-    void cancelBooking(int slotId);
-    void fetchUserStats();
+    void fetchUserStats(const QString &userId = getUserId());
+    void createGym(const QString &name);
+    void fetchUserGainedHours(const QString &userId = getUserId());
+    void addHours(int hours, const QString &userId = getUserId());
 
 signals:
     void gymsLoaded(const QJsonObject &data);
-    void slotsLoaded(const QJsonObject &data);
-    void bookingFinished(const QJsonObject &data);
     void statsLoaded(const QJsonObject &data);
-    void apiError(const QString &message);
-
-private:
-    void handleReply(
-        QNetworkReply *reply,
-        std::function<void(int, const QJsonObject &)> onSuccess
-    );
+    void gymError(const QString &message);
+    void gymCreated(const QJsonObject &data);
+    void gymRemoved(const QJsonObject &data);
+    void hoursLoaded(const QJsonObject &data);
+    void hoursAdded(const QJsonObject &data);
 };
 
 #endif  // GYMMODEL_H

@@ -2,97 +2,79 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QNetworkReply>
-#include <functional>
 
 GymModel::GymModel(QNetworkAccessManager *manager, QObject *parent)
     : BaseModel(manager, parent) {
 }
 
-void GymModel::handleReply(
-    QNetworkReply *reply,
-    std::function<void(int, const QJsonObject &)> onSuccess
-) {
-    auto deleteReply = qScopeGuard([reply] { reply->deleteLater(); });
-
-    if (reply->error() != QNetworkReply::NoError) {
-        emit apiError("Ошибка сети: " + reply->errorString());
-        return;
-    }
-
-    int statusCode =
-        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    QByteArray rawData = reply->readAll();
-
-    if (rawData.isEmpty() || rawData == "null") {
-        emit apiError("Сервер вернул ошибку: " + QString::number(statusCode));
-        return;
-    }
-
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(rawData, &parseError);
-    if (parseError.error != QJsonParseError::NoError) {
-        emit apiError("Ошибка разбора ответа сервера");
-        return;
-    }
-
-    QJsonObject json = doc.object();
-    if (statusCode >= 400) {
-        emit apiError(json["error"].toString("Ошибка сервера"));
-        return;
-    }
-
-    onSuccess(statusCode, json);
-}
-
 void GymModel::fetchGyms() {
-    QNetworkReply *reply = sendPostRequest("/gyms/list", {}, Token::WITH_TOKEN);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        handleReply(reply, [this](int, const QJsonObject &json) {
-            emit gymsLoaded(json);
-        });
-    });
-}
-
-void GymModel::fetchSlots(int gymId) {
-    QJsonObject body;
-    body["gym_id"] = gymId;
-    QNetworkReply *reply = sendPostRequest("/slots/list", body, Token::WITH_TOKEN);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        handleReply(reply, [this](int, const QJsonObject &json) {
-            emit slotsLoaded(json);
-        });
-    });
-}
-
-void GymModel::bookSlot(int slotId) {
-    QJsonObject body;
-    body["slot_id"] = slotId;
-    QNetworkReply *reply = sendPostRequest("/slots/book", body, Token::WITH_TOKEN);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        handleReply(reply, [this](int, const QJsonObject &json) {
-            emit bookingFinished(json);
-        });
-    });
-}
-
-void GymModel::cancelBooking(int slotId) {
-    QJsonObject body;
-    body["slot_id"] = slotId;
     QNetworkReply *reply =
-        sendPostRequest("/slots/cancel", body, Token::WITH_TOKEN);
+        sendGetRequest("/sections/gymList", Token::WITHOUT_TOKEN);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        handleReply(reply, [this](int, const QJsonObject &json) {
-            emit bookingFinished(json);
-        });
+        handleReply(
+            reply, [this](const QJsonObject &json) { emit gymsLoaded(json); },
+            [this](const QString &err_message) { emit gymError(err_message); }
+        );
     });
 }
 
-void GymModel::fetchUserStats() {
+void GymModel::createGym(const QString &name) {
+    if (!isAdmin()) {
+        emit gymError("Недостаточно прав");
+        return;
+    }
+
+    QJsonObject json;
+    json["gymName"] = name;
+    json["creatorId"] = getUserId();
     QNetworkReply *reply =
-        sendPostRequest("/user/stats", {}, Token::WITH_TOKEN);
+        sendPostRequest("/sections/gymList", json, Token::WITHOUT_TOKEN);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        handleReply(reply, [this](int, const QJsonObject &json) {
-            emit statsLoaded(json);
-        });
+        handleReply(
+            reply, [this](const QJsonObject &json) { emit gymCreated(json); },
+            [this](const QString &err_message) { emit gymError(err_message); }
+        );
     });
 }
+
+void GymModel::fetchUserStats(const QString &userId) {
+    QNetworkReply *reply =
+        sendGetRequest("/user/" + userId + "/stats", Token::WITHOUT_TOKEN);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(
+            reply, [this](const QJsonObject &json) { emit statsLoaded(json); },
+            [this](const QString &err_message) { emit gymError(err_message); }
+        );
+    });
+}
+
+void GymModel::fetchUserGainedHours(const QString &userId) {
+    QNetworkReply *reply = sendGetRequest(
+        "/user/" + userId + "/gainedHours", Token::WITHOUT_TOKEN
+    );
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(
+            reply, [this](const QJsonObject &json) { emit hoursLoaded(json); },
+            [this](const QString &err_message) { emit gymError(err_message); }
+        );
+    });
+};
+
+void GymModel::addHours(int hours, const QString &userId) {
+    if (!isAdmin()) {
+        emit gymError("Недостаточно прав");
+        return;
+    }
+    QJsonObject json;
+    json["hours"] = hours;
+
+    QNetworkReply *reply = sendPostRequest(
+        "/user/" + userId + "/gainedHours", json, Token::WITHOUT_TOKEN
+    );
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(
+            reply, [this](const QJsonObject &json) { emit hoursAdded(json); },
+            [this](const QString &err_message) { emit gymError(err_message); }
+        );
+    });
+};

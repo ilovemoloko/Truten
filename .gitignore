@@ -21,3 +21,4 @@ client/CMakeLists.txt.qtds
 .DS_Store
 /Crow/
 /jwt-cpp/
+client/qml/GymView.qml.autosave

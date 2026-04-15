@@ -22,7 +22,7 @@ add_executable(appclient
         src/main.cpp
         include/AuthModel.h src/AuthModel.cpp
         include/GymModelView.h src/GymModelView.cpp
-        include/SlotModelView.h src/SlotModelView.cpp
+
         include/AuthModelView.h src/AuthModelView.cpp
         include/BaseAPIModel.h src/BaseAPIModel.cpp
         shared/enumToken.h
@@ -37,7 +37,8 @@ qt_add_qml_module(appclient
     QML_FILES
         qml/AuthView.qml
         qml/GymView.qml
-        qml/SlotView.qml
+
+        SOURCES include/SlotsList.h
 )
 
 target_include_directories(appclient PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/shared)

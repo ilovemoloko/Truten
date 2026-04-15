@@ -526,6 +526,11 @@ paths:
                     format: uuid
                   gymName:
                     type: string
+                  gymId:
+                    type: string
+                    format: uuid
+                  gymName:
+                    type: string
                   startTime:
                     type: string
                     format: date-time
@@ -537,7 +542,16 @@ paths:
                   capacity:
                     type: integer
                   participantsCount:
+                  capacity:
                     type: integer
+                  participantsCount:
+                    type: integer
+                    description: Количество записавшихся
+                  participants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Participant'
+                    description: Детальный список записавшихся (для админа)
                     description: Количество записавшихся
                   participants:
                     type: array
@@ -631,6 +645,17 @@ paths:
               properties:
                 userId:
                   $ref: '#/components/schemas/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  $ref: '#/components/schemas/UserId'
       responses:
         '204':
           description: Успешная запись
@@ -651,6 +676,17 @@ paths:
           schema:
             $ref: '#/components/schemas/SlotId'
           description: ID слота
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  $ref: '#/components/schemas/UserId'
       requestBody:
         required: true
         content:
@@ -864,6 +900,17 @@ components:
       type: string
       format: uuid
       description: "Уникальный идентификатор слота"
+    Participant:
+      type: object
+      required:
+        - userId
+        - userName
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        userName:
+          type: string
+          description: "Имя пользователя"
     Participant:
       type: object
       required:

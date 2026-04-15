@@ -14,11 +14,22 @@ public:
     void fetchSlots(const QString &gymId);
     void bookSlot(const QString &slotId);
     void cancelBooking(const QString &slotId);
+    void removeSlot(const QString &slotId);
+    void createSlot(
+        const QDateTime &startTime,
+        const QDateTime &endTime,
+        const QString &gymId,
+        int capacity
+    );
+    void getBookedSlotsIds(const QString &userId = getUserId());
 
 signals:
     void slotsLoaded(const QJsonObject &data);
     void bookingFinished(const QJsonObject &data);
     void slotError(const QString &message);
+    void slotCreated(const QJsonObject &data);
+    void slotRemoved(const QJsonObject &data);
+    void bookedSlotsIdsFinished(const QJsonObject &data);
 };
 
 #endif  // SLOTMODEL_H

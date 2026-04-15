@@ -41,7 +41,8 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
     if (rawData.isEmpty() || rawData == "null") {
         qDebug() << "Ошибка сервера, код:" << statusCode;
         emit loginApiError(
-            "ServerError: Сервер вернул ошибку " + QString::number(statusCode)
+            "ServerError: Сервер вернул пустой ответ. Код: " +
+            QString::number(statusCode)
         );
         return;
     }
@@ -65,6 +66,13 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
             // m_accessToken = json["accessToken"].toString(); add for JWT
             // m_refreshToken = json["refreshToken"].toString();
             setUserId(json["userId"].toString());
+
+            if (json["isAdmin"].toBool()) {
+                setAdmin();
+            } else {
+                removeAdmin();
+            }
+
             emit loginApiFinished(json);
             break;
         }
@@ -146,6 +154,13 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
             // m_accessToken = json["accessToken"].toString(); add for JWT
             // m_refreshToken = json["refreshToken"].toString();
             setUserId(json["userId"].toString());
+
+            if (json["isAdmin"].toBool()) {
+                setAdmin();
+            } else {
+                removeAdmin();
+            }
+
             emit createAccountApiFinished(json);
             break;
         }

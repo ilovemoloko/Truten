@@ -11,11 +11,17 @@ Window {
     title: "Truten"
     color: "#ffffff"
 
-
     StackView {
             id: mainStack
             anchors.fill: parent
             initialItem: authPage
+            onCurrentItemChanged: {
+                    if (currentItem && currentItem.logoutRequested !== undefined) {
+                        currentItem.logoutRequested.connect(function() {
+                            mainStack.replace(authPage)
+                        })
+                    }
+                }
     }
     Connections {
         target: authMV

@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
     AuthModel *authModel = new AuthModel(networkManager, &app);
 
-    AuthModelView *authModelView= new AuthModelView(authModel, &app);
+    AuthModelView *authModelView = new AuthModelView(authModel, &app);
 
     GymModel *gymModel = new GymModel(networkManager, &app);
 

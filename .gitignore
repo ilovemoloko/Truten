@@ -19,3 +19,4 @@ client/CMakeLists.txt.qtds
 *.user
 
 .DS_Store
+client/qml/GymView.qml.autosave

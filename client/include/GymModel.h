@@ -17,11 +17,18 @@ public:
 
     void fetchGyms();
     void fetchUserStats(const QString &userId = getUserId());
+    void createGym(const QString &name);
+    void fetchUserGainedHours(const QString &userId = getUserId());
+    void addHours(int hours, const QString &userId = getUserId());
 
 signals:
     void gymsLoaded(const QJsonObject &data);
     void statsLoaded(const QJsonObject &data);
     void gymError(const QString &message);
+    void gymCreated(const QJsonObject &data);
+    void gymRemoved(const QJsonObject &data);
+    void hoursLoaded(const QJsonObject &data);
+    void hoursAdded(const QJsonObject &data);
 };
 
 #endif  // GYMMODEL_H

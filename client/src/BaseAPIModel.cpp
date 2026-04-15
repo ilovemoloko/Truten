@@ -7,6 +7,7 @@
 QString BaseModel::m_accessToken = QString();
 QString BaseModel::m_refreshToken = QString();
 QString BaseModel::m_userId = QString();
+bool BaseModel::m_isAdmin = false;
 
 QString BaseModel::baseUrl() {
     static const QString url = QStringLiteral("http://127.0.0.1:8080/v1");
@@ -93,14 +94,16 @@ void BaseModel::handleReply(
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     QByteArray rawData = reply->readAll();
 
-    if ((statusCode >= 300 || statusCode < 200) && (rawData.isEmpty() || rawData == "null")) {
+    if ((statusCode >= 300 || statusCode < 200) &&
+        (rawData.isEmpty() || rawData == "null")) {
         emit onError("Сервер вернул ошибку: " + QString::number(statusCode));
         return;
     }
 
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(rawData, &parseError);
-    if (parseError.error != QJsonParseError::NoError && (statusCode >= 300 || statusCode < 200)) {
+    if (parseError.error != QJsonParseError::NoError &&
+        (statusCode >= 300 || statusCode < 200)) {
         emit onError("Ошибка разбора ответа сервера");
         return;
     }

@@ -16,7 +16,6 @@ public:
     );
     QString baseUrl();
 
-protected:
     QNetworkAccessManager *m_manager;
 
     static QString getUserId() {
@@ -26,6 +25,18 @@ protected:
     static void setUserId(const QString &userId) {
         m_userId = userId;
     };
+
+    static void setAdmin() {
+        m_isAdmin = true;
+    }
+
+    static void removeAdmin() {
+        m_isAdmin = false;
+    }
+
+    static bool isAdmin() {
+        return m_isAdmin;
+    }
 
     QNetworkReply *sendPostRequest(
         const QString &path,
@@ -53,6 +64,7 @@ private:
     static QString m_accessToken;
     static QString m_refreshToken;
     static QString m_userId;
+    static bool m_isAdmin;
 };
 
 #endif  // BASEAPIMODEL_H

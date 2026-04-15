@@ -4,22 +4,25 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
+#include <QSortFilterProxyModel>
 #include <QVariantList>
 #include "GymModel.h"
 #include "SlotModel.h"
+#include "SlotsList.h"
 
 class GymModelView : public QObject {
     Q_OBJECT
 
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
-    Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged
-    )
+    Q_PROPERTY(QString errorMessage READ errorMessage WRITE setError NOTIFY
+                   errorMessageChanged)
     Q_PROPERTY(QVariantList gyms READ gyms NOTIFY gymsChanged)
-    Q_PROPERTY(QVariantList Slots READ Slots NOTIFY slotsChanged)
-    Q_PROPERTY(QString selectedGymId READ selectedGymId NOTIFY selectedGymIdChanged)
+    Q_PROPERTY(QString selectedGymId READ selectedGymId NOTIFY
+                   selectedGymIdChanged)
     Q_PROPERTY(QString userName READ userName NOTIFY userInfoChanged)
-    Q_PROPERTY(int visitCount READ visitCount NOTIFY userInfoChanged)
-    Q_PROPERTY(int visitsNeeded READ visitsNeeded NOTIFY userInfoChanged)
+    Q_PROPERTY(int hoursCount READ hoursCount NOTIFY userInfoChanged)
+    Q_PROPERTY(int hoursNeeded READ hoursNeeded NOTIFY userInfoChanged)
+    Q_PROPERTY(bool isAdmin READ isAdmin NOTIFY userInfoChanged)
 
 public:
     explicit GymModelView(
@@ -36,12 +39,12 @@ public:
         return m_errorMessage;
     };
 
+    void setErrorMessage(const QString &err_message) {
+        m_errorMessage = err_message;
+    }
+
     QVariantList gyms() const {
         return m_gyms;
-    };
-
-    QVariantList Slots() const {
-        return m_slots;
     };
 
     QString selectedGymId() const {
@@ -52,19 +55,35 @@ public:
         return m_userName;
     };
 
-    int visitCount() const {
-        return m_visitCount;
+    int hoursCount() const {
+        return m_hoursCount;
     };
 
-    int visitsNeeded() const {
-        return m_visitsNeeded;
+    int hoursNeeded() const {
+        return m_hoursNeeded;
     };
+
+    bool isAdmin() {
+        return m_gymModel->isAdmin();
+    }
 
     Q_INVOKABLE void init();
     Q_INVOKABLE void selectGym(const QString &gymId);
     Q_INVOKABLE void bookSlot(const QString &slotId);
     Q_INVOKABLE void cancelBooking(const QString &slotId);
     Q_INVOKABLE void loadSlots(const QString &gymId);
+    Q_INVOKABLE QObject *getDayModel(int day);
+    Q_INVOKABLE bool isSlotBooked(const QString &slotId);
+    Q_INVOKABLE void createSlot(
+        const QDateTime &startTime,
+        const QDateTime &endTime,
+        int capacity
+    );
+    Q_INVOKABLE void removeSlot(const QString &slotId);
+    Q_INVOKABLE void createGym(const QString &name);
+    Q_INVOKABLE void fetchBookedSlotsIds();
+    Q_INVOKABLE void addHours(int hours, const QString &userId);
+    Q_INVOKABLE void fetchHours();
 
 signals:
     void isLoadingChanged();
@@ -75,6 +94,7 @@ signals:
     void userInfoChanged();
     void actionSuccess(const QString &message);
     void actionError(const QString &message);
+    void bookedSlotsChanged();
 
 private slots:
     void onGymsLoaded(const QJsonObject &data);
@@ -82,22 +102,30 @@ private slots:
     void onBookingFinished(const QJsonObject &data);
     void onStatsLoaded(const QJsonObject &data);
     void onApiError(const QString &message);
+    void onSlotCreated(const QJsonObject &data);
+    void onSlotRemoved(const QJsonObject &data);
+    void onGymCreated(const QJsonObject &data);
+    void onBookedSlotsIdsFinished(const QJsonObject &data);
+    void onHoursLoaded(const QJsonObject &data);
+    void onHoursAdded(const QJsonObject &data);
 
 private:
     GymModel *m_gymModel;
     SlotModel *m_slotModel;
-
-    // TODO: add set of slotsID that are booked by client
-    // maybe QSet<QString> bookedIds;
+    SlotsListModel *m_slotsListModel;
 
     bool m_isLoading = false;
     QString m_errorMessage;
     QVariantList m_gyms;
-    QVariantList m_slots;  // for one gym
+    // contains slots for each day of week for selected gym
+    QList<QSortFilterProxyModel *> m_dayProxies;
     QString m_selectedGymId;
+    QSet<QString> m_BookedSlotIds;
+    QMap<int, QString> m_bookingsByDay;
     QString m_userName;
-    int m_visitCount = 0;
-    int m_visitsNeeded = 8;
+
+    int m_hoursCount = 0;
+    int m_hoursNeeded = 24;
     int m_pendingRequests = 0;
 
     void setLoading(bool loading);

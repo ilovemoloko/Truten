@@ -17,6 +17,50 @@ void SlotModel::fetchSlots(const QString &gymId) {
     });
 };
 
+void SlotModel::createSlot(
+    const QDateTime &startTime,
+    const QDateTime &endTime,
+    const QString &gymId,
+    int capacity
+) {
+    if (!isAdmin()) {
+        qDebug() << "Error: Not enough rights";
+        emit slotError("Недостаточно прав");
+        return;
+    }
+
+    QJsonObject json;
+    json["startTime"] = startTime.toString(Qt::ISODate);
+    json["endTime"] = endTime.toString(Qt::ISODate);
+    json["gymId"] = gymId;
+    json["capacity"] = capacity;
+
+    QNetworkReply *reply =
+        sendPostRequest("/slots", json, Token::WITHOUT_TOKEN);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(
+            reply, [this](const QJsonObject &data) { emit slotCreated(data); },
+            [this](const QString &err_message) { emit slotError(err_message); }
+        );
+    });
+};
+
+void SlotModel::removeSlot(const QString &slotId) {
+    if (!isAdmin()) {
+        qDebug() << "Error: Not enough rights";
+        emit slotError("Недостаточно прав");
+        return;
+    }
+    QNetworkReply *reply =
+        sendDeleteRequest("/slots/" + slotId, {}, Token::WITHOUT_TOKEN);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(
+            reply, [this](const QJsonObject &data) { emit slotRemoved(data); },
+            [this](const QString &err_message) { emit slotError(err_message); }
+        );
+    });
+}
+
 void SlotModel::bookSlot(const QString &slotId) {
     QJsonObject json;
     json["userId"] = getUserId();
@@ -46,6 +90,22 @@ void SlotModel::cancelBooking(const QString &slotId) {
         handleReply(
             reply,
             [this](const QJsonObject &data) { emit bookingFinished(data); },
+            [this](const QString &err_message) { emit slotError(err_message); }
+        );
+    });
+};
+
+void SlotModel::getBookedSlotsIds(const QString &userId) {
+    QNetworkReply *reply = sendGetRequest(
+        "/user/" + userId + "/enrollments", Token::WITHOUT_TOKEN
+    );
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(
+            reply,
+            [this](const QJsonObject &data) {
+                emit bookedSlotsIdsFinished(data);
+            },
             [this](const QString &err_message) { emit slotError(err_message); }
         );
     });

@@ -35,6 +35,8 @@ public:
 
     void createSlot(const std::string& gym_id, std::string& time_begin, std::string& time_end, const int capacity);
 
+    void deleteSlot(const std::string& slot_id);
+
     void addAdminToGym(const std::string gym_id, const std::string& new_admin);
 
     [[nodiscard]] std::vector<crow::json::wvalue> getGymAdmins(const std::string& gym_id) const;

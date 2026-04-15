@@ -51,7 +51,7 @@ public:
     }
 
     crow::response deleteSlot(const std::string& slot_id) {
-        db_slots.closeSlot(slot_id);
+        db_slots.deleteSlot(slot_id);
         return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
     }
 

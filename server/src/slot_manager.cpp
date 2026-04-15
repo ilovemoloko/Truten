@@ -135,3 +135,7 @@ void SlotManager::createSlot(const std::string &gym_id, std::string &time_begin,
     auto gym_name = gym_name_q.as<std::string>();
     db->execute("INSERT INTO slots(section_id, section_name, start_time, end_time, capacity) VALUES($1, $2, $3, $4, $5)", gym_id, gym_name, time_begin, time_end, capacity);
 }
+
+void SlotManager::deleteSlot(const std::string &slot_id) {
+    db->execute("DELETE FROM slots WHERE id = $1", slot_id);
+}

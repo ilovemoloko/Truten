@@ -25,8 +25,9 @@ std::string AuthManager::getPasswordByEmail(const std::string &email) const {
 
 void AuthManager::createUser(const std::string &email,
                              const std::string &password,
-                             const std::string &name) {
+                             const std::string &name,
+                             bool is_admin) {
     const auto res = db->execute(
-        "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3)",
-        email, password, name);
+        "INSERT INTO users (email, password_hash, name, is_admin) VALUES ($1, $2, $3, $4)",
+        email, password, name, is_admin);
 }

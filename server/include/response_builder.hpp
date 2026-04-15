@@ -50,10 +50,18 @@ public:
     template<typename T>
     ResponseBuilder addField(const std::string &field_name, const T &value) {
         response_body[field_name] = value;
+
         return *this;
     }
 
+
+
     [[nodiscard]] crow::response build() {
+        //for whatever reason QT treats empty responses as errors.
+        //gotta think of a workaround. ATM this works.
+        if (status_code == *RESPONSE_CODE::OK || status_code == *RESPONSE_CODE::OK_EMPTY) {
+            response_body["success"] = true;
+        }
         return {status_code, response_body.dump()};
     }
 

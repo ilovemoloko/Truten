@@ -19,3 +19,5 @@ client/CMakeLists.txt.qtds
 *.user
 
 .DS_Store
+/Crow/
+/jwt-cpp/

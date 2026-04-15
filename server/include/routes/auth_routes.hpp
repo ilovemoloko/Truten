@@ -6,12 +6,13 @@
 #include "request_handler.hpp"
 #include "response_builder.hpp"
 #include "auth_manager.hpp"
+#include "user_manager.hpp"
 
 struct AuthRoutes {
 public:
     using crow::json::type::String;
 
-    explicit AuthRoutes(std::shared_ptr<Database> db) : db_auth(std::move(db)) {
+    explicit AuthRoutes(const std::shared_ptr<Database>& db) : db_auth(db), db_user(db) {
     }
 
     crow::response createAccount(const crow::request &req) {
@@ -25,9 +26,17 @@ public:
         const auto email = static_cast<std::string>(request["email"]);
         const auto password = static_cast<std::string>(request["password"]);
         const auto name = static_cast<std::string>(request["name"]);
+        if (db_auth.emailExists(email)) {
+            return ResponseBuilder(RESPONSE_CODE::INVALID).build();
+        }
         db_auth.createUser(email, password, name);
         const std::string user_id = db_auth.getUserIdByEmail(email);
-        return ResponseBuilder(RESPONSE_CODE::OK).addField("userId", user_id).build();
+        ResponseBuilder resp;
+        resp.addField("userId", user_id);
+        //everybody is non-admin at first
+        //left here for simpler client code
+        resp.addField("isAdmin", false);
+        return resp.build();
     }
 
     crow::response login(const crow::request &req) const {
@@ -43,7 +52,11 @@ public:
         const std::string user_id = db_auth.getUserIdByEmail(email);
         if (password == real_password) {
             // TODO: not mvp, but add JWT
-            return ResponseBuilder(RESPONSE_CODE::OK).addField("userId", user_id).build();
+            bool is_admin = db_user.isAdmin(user_id);
+            ResponseBuilder resp;
+            resp.addField("userId", user_id);
+            resp.addField("isAdmin", is_admin);
+            return resp.build();
         }
         return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
     }
@@ -67,6 +80,7 @@ public:
 
 private:
     AuthManager db_auth;
+    UserManager db_user;
 };
 
 #endif // TRUTEN_SERVER_AUTH_ROUTES_HPP

@@ -1,15 +1,8 @@
 #ifndef TRUTEN_SERVER_SLOT_MANAGER_HPP
 #define TRUTEN_SERVER_SLOT_MANAGER_HPP
 #include "database.hpp"
-
-
-//it's only ever used in "get gym list"
-//i guess it makes sense for this struct to
-//be here
-struct GymList {
-    std::vector<std::string> gyms, ids;
-};
-
+#include <vector>
+#include "crow.h"
 
 // I suppose you can guess what it does by the name. Come on. We're not
 // 5-year-olds here. Go on.
@@ -30,7 +23,25 @@ public:
 
     [[nodiscard]] pqxx::result getSlotInfo(const std::string &id) const;
 
-    [[nodiscard]] GymList getGymList() const;
+    [[nodiscard]] std::vector<crow::json::wvalue> getGymList() const;
+
+    [[nodiscard]] std::vector<crow::json::wvalue> loadUserList(const pqxx::row::reference & field) const;
+
+    [[nodiscard]] std::vector<crow::json::wvalue> getGymSlots(const std::string& gym_id) const;
+
+    [[nodiscard]] crow::json::wvalue getSlotInfoJSON(const std::string& slot_id) const;
+
+    void createGym(const std::string& gym_name, const std::string& creator_id);
+
+    void createSlot(const std::string& gym_id, std::string& time_begin, std::string& time_end, const int capacity);
+
+    void deleteSlot(const std::string& slot_id);
+
+    void addAdminToGym(const std::string gym_id, const std::string& new_admin);
+
+    [[nodiscard]] std::vector<crow::json::wvalue> getGymAdmins(const std::string& gym_id) const;
+
+    std::string getNameById(const std::string& user_id) const;
 private:
     std::shared_ptr<Database> db;
 };

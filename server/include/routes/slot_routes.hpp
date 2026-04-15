@@ -7,24 +7,33 @@
 #include "response_builder.hpp"
 #include "status_codes.hpp"
 #include "slot_manager.hpp"
+#include "user_manager.hpp"
 
 struct SlotRoutes {
 public:
-    explicit SlotRoutes(std::shared_ptr<Database> db) : db_slots(std::move(db)) {
+    explicit SlotRoutes(const std::shared_ptr<Database>& db) : db_slots(db), db_user(db) {
     }
 
-    crow::response getSlots(const std::string& slot_id) const {
-        ResponseBuilder response;
-        auto res = db_slots.getSlotInfo(slot_id)[0];
-        for (std::string field : {
-                 "slot_id", "section_id", "section_name",
-                 "enrolled", "start_time", "end_time"
-             }) {
-            response.addField(field, res[field].as<std::string>());
-             }
-        response.addField("capacity", res["capacity"].as<int>());
-        response.addField("is_cancelled", res["is_cancelled"].as<bool>());
-        return response.build();
+    crow::response slotInfo(const std::string& slot_id) const {
+        auto res = db_slots.getSlotInfoJSON(slot_id);
+        return {res};
+    }
+
+    crow::response createSlot(const crow::request& req) {
+        RequestHandler request(req);
+        request.require("startTime");
+        request.require("endTime");
+        request.require("gymId");
+        request.require("capacity");
+        if (!request.responseIsOk()) {
+            return ResponseBuilder(request).build();
+        }
+        auto start = static_cast<std::string>(request["startTime"]);
+        auto end = static_cast<std::string>(request["endTime"]);
+        auto gym_id = static_cast<std::string>(request["gymId"]);
+        auto capacity = static_cast<int>(request["capacity"]);
+        db_slots.createSlot(gym_id, start, end, capacity);
+        return ResponseBuilder().build();
     }
 
     crow::response patchSlot(const crow::request& req, const std::string& slot_id) {
@@ -42,7 +51,7 @@ public:
     }
 
     crow::response deleteSlot(const std::string& slot_id) {
-        db_slots.closeSlot(slot_id);
+        db_slots.deleteSlot(slot_id);
         return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
     }
 
@@ -51,7 +60,11 @@ public:
         request.require("userId", crow::json::type::String);
         if (request.responseIsOk()) {
             const auto user_id = std::string(request["userId"]);
-            db_slots.addEntry(user_id, slot_id);
+            const auto user_enrollments = db_user.getUserEnrollments(user_id);
+            if (std::find(user_enrollments.begin(), user_enrollments.end(), slot_id) == user_enrollments.end()) {
+                db_slots.addEntry(user_id, slot_id);
+                db_user.addEnrollment(user_id, slot_id);
+            }
         }
         return ResponseBuilder(request).build();
     }
@@ -62,23 +75,16 @@ public:
         if (request.responseIsOk()) {
             const auto user_id = std::string(request["userId"]);
             db_slots.removeEntry(user_id, slot_id);
+            db_user.removeEnrollment(user_id, slot_id);
         }
         return ResponseBuilder(request).build();
-    }
-
-    crow::response getGymList() const {
-        ResponseBuilder res;
-        auto [gyms, ids] = db_slots.getGymList();
-        res.addField("sections", gyms);
-        res.addField("ids", ids);
-        return res.build();
     }
 
     void registerRoutes(crow::SimpleApp &app) {
         CROW_ROUTE(app, "/v1/slots/<string>")
                 .methods("GET"_method)(
                     [this](const crow::request &req, const std::string &slot_id) {
-                        return getSlots(slot_id);
+                        return slotInfo(slot_id);
                     });
 
         CROW_ROUTE(app, "/v1/slots/<string>")
@@ -105,14 +111,16 @@ public:
                         return deleteUserEntry(req, slot_id);
                     });
 
-        CROW_ROUTE(app, "/v1/sections/gymList").methods("GET"_method)(
-            [this](const crow::request& req) {
-                return getGymList();
+        CROW_ROUTE(app, "/v1/slots")
+        .methods("POST"_method)(
+            [this](const crow::request &req) {
+                return createSlot(req);
             });
     }
 
 private:
     SlotManager db_slots;
+    UserManager db_user;
 };
 
 #endif // TRUTEN_SERVER_SLOT_ROUTES_HPP

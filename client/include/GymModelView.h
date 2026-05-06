@@ -84,6 +84,11 @@ public:
     Q_INVOKABLE void fetchBookedSlotsIds();
     Q_INVOKABLE void addHours(int hours, const QString &userId);
     Q_INVOKABLE void fetchHours();
+    //new Q_INVOKABLE for queue
+    Q_INVOKABLE void joinQueue(const QString &slotId);
+    Q_INVOKABLE void leaveQueue(const QString &slotId);
+    Q_INVOKABLE bool isSlotQueued(const QString &slotId);
+    Q_INVOKABLE void fetchQueuedSlotsIds();
 
 signals:
     void isLoadingChanged();
@@ -108,6 +113,10 @@ private slots:
     void onBookedSlotsIdsFinished(const QJsonObject &data);
     void onHoursLoaded(const QJsonObject &data);
     void onHoursAdded(const QJsonObject &data);
+    //slots && queue
+    void onQueueJoined(const QJsonObject &data);
+    void onQueueLeft(const QJsonObject &data);
+    void onQueuedSlotsIdsFinished(const QJsonObject &data);
 
 private:
     GymModel *m_gymModel;
@@ -121,6 +130,8 @@ private:
     QList<QSortFilterProxyModel *> m_dayProxies;
     QString m_selectedGymId;
     QSet<QString> m_BookedSlotIds;
+    //new contains queue slots
+    QSet<QString> m_QueuedSlotIds;
     QMap<int, QString> m_bookingsByDay;
     QString m_userName;
 

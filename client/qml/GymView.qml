@@ -416,17 +416,23 @@ Page {
                         border.width: 1
 
                         property bool isBooked: false
+                        property bool isQueued: false
                         property bool isFull: model.participantsCount >= model.capacity
-
 
                         Connections {
                             target: gymMV
-                            function onBookedSlotsChanged() { isBooked = gymMV.isSlotBooked(model.slotId) }
+                            function onBookedSlotsChanged() {
+                                isBooked = gymMV.isSlotBooked(model.slotId)
+                                isQueued = gymMV.isSlotQueued(model.slotId)
+                            }
                         }
-                        Component.onCompleted: isBooked = gymMV.isSlotBooked(model.slotId)
+                        Component.onCompleted: {
+                            isBooked = gymMV.isSlotBooked(model.slotId)
+                            isQueued = gymMV.isSlotQueued(model.slotId)
+                        }
 
-                        // Green - free, red - full
-                        color: isBooked ? "#dcfce7" : (isFull ? "#fee2e2" : "transparent")
+                        // green=booked, yellow=queued, red=full
+                        color: isBooked ? "#dcfce7" : (isQueued ? "#fef9c3" : (isFull ? "#fee2e2" : "transparent"))
 
                         ColumnLayout {
                             id: contentCol
@@ -461,30 +467,51 @@ Page {
                                     }
 
 
-                                    // Hide book button for admin, because buttons are useless for him
+                                    // new button: записаться/встать в очередь/выйти из очереди/отменить
                                     Button {
-                                        text: slotDelegate.isBooked ? "Отменить" : "Записаться"
-                                        Layout.preferredWidth: 120
-                                        Layout.preferredHeight: 35
-                                        enabled: slotDelegate.isBooked || !slotDelegate.isFull
+                                        id: actionBtn
                                         visible: !gymMV.isAdmin
+                                        Layout.preferredWidth: 150
+                                        Layout.preferredHeight: 35
 
+                                        property string btnText: {
+                                            if (slotDelegate.isBooked) return "Отменить"
+                                            if (slotDelegate.isQueued) return "Выйти из очереди"
+                                            if (slotDelegate.isFull) return "Встать в очередь"
+                                            return "Записаться"
+                                        }
+                                        property color btnColor: {
+                                            if (slotDelegate.isBooked) return "#f5f5f5"
+                                            if (slotDelegate.isQueued) return "#fef08a"
+                                            if (slotDelegate.isFull) return "#fed7aa"
+                                            return "#f5f5f5"
+                                        }
+                                        property color btnTextColor: {
+                                            if (slotDelegate.isQueued) return "#92400e"
+                                            if (slotDelegate.isFull) return "#9a3412"
+                                            return "#2d241e"
+                                        }
+
+                                        text: btnText
                                         background: Rectangle {
                                             radius: 8
-                                            color: parent.enabled ? (parent.pressed ? "#d4d4d4" : "#f5f5f5") : "#f9fafb"
-                                            border.color: parent.enabled ? "transparent" : "#e5e5e5"
+                                            color: parent.pressed ? Qt.darker(actionBtn.btnColor, 1.05) : actionBtn.btnColor
                                         }
                                         contentItem: Text {
                                             text: parent.text
-                                            color: parent.enabled ? "#2d241e" : "#a8a29e"
+                                            color: actionBtn.btnTextColor
                                             font.weight: Font.Bold
-                                            font.pixelSize: 13
+                                            font.pixelSize: 12
                                             horizontalAlignment: Text.AlignHCenter
                                             verticalAlignment: Text.AlignVCenter
                                         }
                                         onClicked: {
                                             if (slotDelegate.isBooked) {
                                                 gymMV.cancelBooking(model.slotId)
+                                            } else if (slotDelegate.isQueued) {
+                                                gymMV.leaveQueue(model.slotId)
+                                            } else if (slotDelegate.isFull) {
+                                                gymMV.joinQueue(model.slotId)
                                             } else {
                                                 gymMV.bookSlot(model.slotId)
                                             }
@@ -510,6 +537,7 @@ Page {
 
                                     Repeater {
                                         model: (typeof participants !== "undefined") ? participants : []
+
                                         delegate: ColumnLayout {
                                             Layout.fillWidth: true
                                             spacing: 5
@@ -597,6 +625,47 @@ Page {
                                         visible: model.participantsCount === 0
                                         text: "Пока никого нет"
                                         font.pixelSize: 12; color: "#a8a29e"
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 5
+                                    visible: model.queueCount > 0
+
+                                    Rectangle { Layout.fillWidth: true; height: 1; color: "#e5e5e5" }
+
+                                    RowLayout {
+                                        spacing: 6
+                                        Text {
+                                            text: "Очередь:"
+                                            font.bold: true
+                                            font.pixelSize: 16
+                                        }
+                                        Rectangle {
+                                            width: queueBadge.implicitWidth + 10
+                                            height: 20
+                                            radius: 10
+                                            color: "#fed7aa"
+                                            Text {
+                                                id: queueBadge
+                                                anchors.centerIn: parent
+                                                text: model.queueCount
+                                                font.pixelSize: 12
+                                                font.weight: Font.Bold
+                                                color: "#9a3412"
+                                            }
+                                        }
+                                    }
+
+                                    Repeater {
+                                        model: (typeof slotQueue !== "undefined") ? slotQueue : []
+                                        delegate: Text {
+                                            text: "• " + modelData.userName + " (ID: " + modelData.userId + ")"
+                                            font.pixelSize: 12
+                                            color: "#92400e"
+                                            Layout.fillWidth: true
+                                        }
                                     }
                                 }
 

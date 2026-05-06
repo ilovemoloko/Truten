@@ -63,8 +63,8 @@ void AuthModel::loginApiReply(QNetworkReply *reply) {
 
     switch (statusCode) {
         case 200: {
-            // m_accessToken = json["accessToken"].toString(); add for JWT
-            // m_refreshToken = json["refreshToken"].toString();
+            setAccessToken(json["accessToken"].toString());
+            setRefreshToken(json["refreshToken"].toString());
             setUserId(json["userId"].toString());
 
             if (json["isAdmin"].toBool()) {
@@ -151,8 +151,8 @@ void AuthModel::createAccountApiReply(QNetworkReply *reply) {
 
     switch (statusCode) {
         case 200: {
-            // m_accessToken = json["accessToken"].toString(); add for JWT
-            // m_refreshToken = json["refreshToken"].toString();
+            setAccessToken(json["accessToken"].toString());
+            setRefreshToken(json["refreshToken"].toString());
             setUserId(json["userId"].toString());
 
             if (json["isAdmin"].toBool()) {

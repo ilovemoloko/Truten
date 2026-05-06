@@ -10,6 +10,8 @@ struct SlotItem {
     int capacity;
     int participantsCount;
     QVariantList participants;
+    int queueCount;
+    QVariantList queue;
     QDateTime startTime;
     QDateTime endTime;
 };
@@ -22,6 +24,8 @@ public:
         CapacityRole,
         ParticipantsCountRole,
         ParticipantsRole,
+        QueueCountRole,
+        QueueRole,
         StartTimeRole,
         EndTimeRole,
         DayRole
@@ -52,6 +56,10 @@ public:
                 return item.participantsCount;
             case ParticipantsRole:
                 return item.participants;
+            case QueueCountRole:
+                return item.queueCount;
+            case QueueRole:
+                return item.queue;
             case StartTimeRole:
                 return item.startTime;
             case EndTimeRole:
@@ -76,6 +84,8 @@ public:
             {CapacityRole, "capacity"},
             {ParticipantsCountRole, "participantsCount"},
             {ParticipantsRole, "participants"},
+            {QueueCountRole, "queueCount"},
+            {QueueRole, "slotQueue"},
             {StartTimeRole, "startTime"},
             {EndTimeRole, "endTime"},
             {DayRole, "dayOfWeek"}};

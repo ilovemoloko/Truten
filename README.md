@@ -79,7 +79,6 @@ cmake --build . --parallel $(nproc)
 cd ../..
 ```
 
-> При первой сборке CMake скачивает Crow и jwt-cpp — нужен интернет (~100 МБ).
 
 ---
 

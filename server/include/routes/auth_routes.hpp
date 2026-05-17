@@ -7,10 +7,7 @@
 #include "response_builder.hpp"
 #include "auth_manager.hpp"
 #include "user_manager.hpp"
-<<<<<<< Updated upstream
-=======
 #include "jwt.hpp"
->>>>>>> Stashed changes
 
 struct AuthRoutes {
 public:
@@ -35,13 +32,6 @@ public:
         }
         db_auth.createUser(email, password, name);
         const std::string user_id = db_auth.getUserIdByEmail(email);
-<<<<<<< Updated upstream
-        ResponseBuilder resp;
-        resp.addField("userId", user_id);
-        //everybody is non-admin at first
-        //left here for simpler client code
-        resp.addField("isAdmin", false);
-=======
         const std::string access_token = make_access_token(user_id, false);
         const std::string refresh_token = make_refresh_token(user_id);
         ResponseBuilder resp;
@@ -49,7 +39,6 @@ public:
         resp.addField("isAdmin", false);
         resp.addField("accessToken", access_token);
         resp.addField("refreshToken", refresh_token);
->>>>>>> Stashed changes
         return resp.build();
     }
 
@@ -64,18 +53,8 @@ public:
         const auto password = static_cast<std::string>(request["password"]);
         const std::string real_password = db_auth.getPasswordByEmail(email);
         const std::string user_id = db_auth.getUserIdByEmail(email);
-<<<<<<< Updated upstream
-        if (password == real_password) {
-            // TODO: not mvp, but add JWT
-            bool is_admin = db_user.isAdmin(user_id);
-            ResponseBuilder resp;
-            resp.addField("userId", user_id);
-            resp.addField("isAdmin", is_admin);
-            return resp.build();
-=======
         if (password != real_password) {
             return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
->>>>>>> Stashed changes
         }
         const bool is_admin = db_user.isAdmin(user_id);
         const std::string access_token = make_access_token(user_id, is_admin);

@@ -68,9 +68,6 @@ public:
         return response.build();
     }
 
-<<<<<<< Updated upstream
-    void registerRoutes(crow::SimpleApp &app) {
-=======
     crow::response getUserQueuedSlots(const std::string& id) {
         const auto res = db_user.getUserQueuedSlots(id);
         ResponseBuilder response;
@@ -80,7 +77,6 @@ public:
 
     template<typename AppType>
     void registerRoutes(AppType &app) {
->>>>>>> Stashed changes
         CROW_ROUTE(app, "/v1/user/<string>/gainedHours")(
             [this](const crow::request &req, const std::string &user_id) {
                 return getUserHours(user_id);
@@ -118,14 +114,11 @@ public:
             [this](const crow::request& req, const std::string& user_id) {
                 return getUserEnrollments(user_id);
             });
-<<<<<<< Updated upstream
-=======
 
         CROW_ROUTE(app, "/v1/user/<string>/queuedSlots").methods("GET"_method)(
             [this](const crow::request& req, const std::string& user_id) {
                 return getUserQueuedSlots(user_id);
             });
->>>>>>> Stashed changes
     }
 
 private:

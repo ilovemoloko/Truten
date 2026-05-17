@@ -26,11 +26,7 @@ struct ServerMain {
          */
         db->init();
         AuthRoutes auth(db);
-<<<<<<< Updated upstream
-        QueueRoutes queue;
-=======
         QueueRoutes queue(db);
->>>>>>> Stashed changes
         SectionRoutes sections(db);
         SlotRoutes slots(db);
         UserRoutes users(db);
@@ -39,7 +35,9 @@ struct ServerMain {
         sections.registerRoutes(app);
         slots.registerRoutes(app);
         users.registerRoutes(app);
-        app.port(8080).multithreaded().run();
+        const char* port_env = std::getenv("PORT");
+        const uint16_t port = port_env ? static_cast<uint16_t>(std::stoi(port_env)) : 8080;
+        app.port(port).multithreaded().run();
     }
 
 private:

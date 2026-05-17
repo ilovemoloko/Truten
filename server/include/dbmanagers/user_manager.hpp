@@ -30,15 +30,12 @@ public:
 
     void removeEnrollment(const std::string& user_id, const std::string& slot_id);
 
-<<<<<<< Updated upstream
-=======
     void addQueuedSlot(const std::string& user_id, const std::string& slot_id);
 
     void removeQueuedSlot(const std::string& user_id, const std::string& slot_id);
 
     [[nodiscard]] std::vector<std::string> getUserQueuedSlots(const std::string& user_id) const;
 
->>>>>>> Stashed changes
     void deleteUser(const std::string &id);
 
 private:

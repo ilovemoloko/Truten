@@ -84,10 +84,7 @@ crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id) cons
     auto res = getSlotInfo(slot_id)[0];
     crow::json::wvalue to_return;
     auto participants = loadUserList(res[4]);
-<<<<<<< Updated upstream
-=======
     auto queue_users = loadUserList(res[8]);
->>>>>>> Stashed changes
     //kill me
     to_return["slotId"] = res[0].as<std::string>();
     to_return["gymId"] = res[1].as<std::string>();
@@ -97,14 +94,9 @@ crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id) cons
     to_return["participants"] = std::move(participants);
     to_return["startTime"] = res[5].as<std::string>();
     to_return["endTime"] = res[6].as<std::string>();
-<<<<<<< Updated upstream
-    return to_return;
-
-=======
     to_return["queueCount"] = static_cast<short>(queue_users.size());
     to_return["queue"] = std::move(queue_users);
     return to_return;
->>>>>>> Stashed changes
 }
 
 void SlotManager::addAdminToGym(const std::string gym_id, const std::string &new_admin) {
@@ -136,20 +128,11 @@ void SlotManager::deleteSlot(const std::string &slot_id) {
     auto participants = loadUserList(slot_info[4]);
     for (auto &part : participants) {
         std::string user_id = part["userId"].dump();
-<<<<<<< Updated upstream
-        //sadly .dump() leaves the string in a weird format
-        //like ""a""
-=======
         //sadly .dump() leaves the string in a weird format like ""a""
->>>>>>> Stashed changes
         user_id.pop_back();
         user_id.erase(user_id.begin());
         db->execute("UPDATE users SET enrolled_slots = array_remove(enrolled_slots, $1) WHERE ID = $2", slot_id, user_id);
     }
-<<<<<<< Updated upstream
-    db->execute("DELETE FROM slots WHERE id = $1", slot_id);
-}
-=======
     auto queue_users = loadUserList(slot_info[8]);
     for (auto &part : queue_users) {
         std::string user_id = part["userId"].dump();
@@ -193,4 +176,3 @@ std::vector<std::string> SlotManager::getQueueUserIds(const std::string &slot_id
     } while (elem.first != pqxx::array_parser::juncture::done);
     return result;
 }
->>>>>>> Stashed changes

@@ -58,18 +58,8 @@ public:
     crow::response addUserEntry(const crow::request& req, const std::string& slot_id) {
         RequestHandler request(req);
         request.require("userId", crow::json::type::String);
-<<<<<<< Updated upstream
-        if (request.responseIsOk()) {
-            const auto user_id = std::string(request["userId"]);
-            const auto user_enrollments = db_user.getUserEnrollments(user_id);
-            if (std::find(user_enrollments.begin(), user_enrollments.end(), slot_id) == user_enrollments.end()) {
-                db_slots.addEntry(user_id, slot_id);
-                db_user.addEnrollment(user_id, slot_id);
-            }
-=======
         if (!request.responseIsOk()) {
             return ResponseBuilder(request).build();
->>>>>>> Stashed changes
         }
         const auto user_id = std::string(request["userId"]);
         const auto user_enrollments = db_user.getUserEnrollments(user_id);
@@ -87,15 +77,8 @@ public:
     crow::response deleteUserEntry(const crow::request& req, const std::string& slot_id) {
         RequestHandler request(req);
         request.require("userId", crow::json::type::String);
-<<<<<<< Updated upstream
-        if (request.responseIsOk()) {
-            const auto user_id = std::string(request["userId"]);
-            db_slots.removeEntry(user_id, slot_id);
-            db_user.removeEnrollment(user_id, slot_id);
-=======
         if (!request.responseIsOk()) {
             return ResponseBuilder(request).build();
->>>>>>> Stashed changes
         }
         const auto user_id = std::string(request["userId"]);
         db_slots.removeEntry(user_id, slot_id);
@@ -112,12 +95,8 @@ public:
         return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
     }
 
-<<<<<<< Updated upstream
-    void registerRoutes(crow::SimpleApp &app) {
-=======
     template<typename AppType>
     void registerRoutes(AppType &app) {
->>>>>>> Stashed changes
         CROW_ROUTE(app, "/v1/slots/<string>")
                 .methods("GET"_method)(
                     [this](const crow::request &req, const std::string &slot_id) {

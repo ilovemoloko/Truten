@@ -43,8 +43,6 @@ public:
     [[nodiscard]] std::vector<crow::json::wvalue> getGymAdmins(const std::string& gym_id) const;
 
     std::string getNameById(const std::string& user_id) const;
-<<<<<<< Updated upstream
-=======
 
     [[nodiscard]] bool isAtCapacity(const std::string& slot_id) const;
 
@@ -52,11 +50,10 @@ public:
 
     void removeFromQueue(const std::string& user_id, const std::string& slot_id);
 
-    //return first queue user
     [[nodiscard]] std::string getFirstInQueue(const std::string& slot_id) const;
 
     [[nodiscard]] std::vector<std::string> getQueueUserIds(const std::string& slot_id) const;
->>>>>>> Stashed changes
+
 private:
     std::shared_ptr<Database> db;
 };

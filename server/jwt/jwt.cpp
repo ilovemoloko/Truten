@@ -1,4 +1,3 @@
-//i don't know what it does, we don't need it, not mvp, yada-yada
 #include <jwt-cpp/jwt.h>
 #include <cstdlib>
 #include <chrono>

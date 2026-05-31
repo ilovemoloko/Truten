@@ -10,7 +10,7 @@
 
 struct UserRoutes {
 public:
-    explicit UserRoutes(std::shared_ptr<Database> db) : db_user(std::move(db)) {
+    explicit UserRoutes(std::shared_ptr<Database> db) : db(db), db_user(std::move(db)) {
     }
 
     crow::response getUserHours(const std::string& user_id) const {
@@ -24,28 +24,37 @@ public:
     }
 
     crow::response addUserHours(const crow::request& req, const std::string& user_id) {
-        if (!db_user.userExists(user_id)) {
-            return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
-        }
         RequestHandler request(req);
         request.require("hours", crow::json::type::Number);
         if (!request.responseIsOk()) {
             return ResponseBuilder(request).build();
         }
         const int hours = static_cast<int>(request["hours"]);
-        db_user.addUserHours(user_id, hours);
-        return ResponseBuilder(request).build();
+
+        return db->executeInTransaction([&]() {
+            if (!db_user.userExists(user_id, true)) {
+                return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
+            }
+            db_user.addUserHours(user_id, hours);
+            return ResponseBuilder(request).build();
+        });
     }
 
     crow::response banUser(const crow::request& req, const std::string& user_id) {
-        if (!db_user.userExists(user_id)) {
-            return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
-        }
         RequestHandler request(req);
         request.require("banDuration", crow::json::type::Number);
+        if (!request.responseIsOk()) {
+            return ResponseBuilder(request).build();
+        }
         const int duration = static_cast<int>(request["banDuration"]);
-        db_user.banUser(user_id, duration);
-        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+
+        return db->executeInTransaction([&]() {
+            if (!db_user.userExists(user_id, true)) {
+                return ResponseBuilder(RESPONSE_CODE::NOT_FOUND).build();
+            }
+            db_user.banUser(user_id, duration);
+            return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+        });
     }
 
     crow::response getUnbanTime(const std::string& user_id) const {
@@ -57,8 +66,10 @@ public:
     }
 
     crow::response deleteUser(const std::string& id) {
-        db_user.deleteUser(id);
-        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+        return db->executeInTransaction([&]() {
+            db_user.deleteUser(id);
+            return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+        });
     }
 
     crow::response getUserEnrollments(const std::string& id) {
@@ -122,6 +133,7 @@ public:
     }
 
 private:
+    std::shared_ptr<Database> db;
     UserManager db_user;
 };
 

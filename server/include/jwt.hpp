@@ -37,7 +37,7 @@ static std::string make_refresh_token(const std::string &user_id) {
 struct AuthMiddleware {
     struct context {
         std::string user_id;
-        bool is_admin{false};
+        bool is_admin = false;
     };
 
     static bool starts_with(const std::string &s, const std::string &prefix) {

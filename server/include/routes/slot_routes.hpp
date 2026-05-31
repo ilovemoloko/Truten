@@ -11,7 +11,7 @@
 
 struct SlotRoutes {
 public:
-    explicit SlotRoutes(const std::shared_ptr<Database>& db) : db_slots(db), db_user(db) {
+    explicit SlotRoutes(const std::shared_ptr<Database>& db) : db(db), db_slots(db), db_user(db) {
     }
 
     crow::response slotInfo(const std::string& slot_id) const {
@@ -32,8 +32,10 @@ public:
         auto end = static_cast<std::string>(request["endTime"]);
         auto gym_id = static_cast<std::string>(request["gymId"]);
         auto capacity = static_cast<int>(request["capacity"]);
-        db_slots.createSlot(gym_id, start, end, capacity);
-        return ResponseBuilder().build();
+        return db->executeInTransaction([&]() {
+            db_slots.createSlot(gym_id, start, end, capacity);
+            return ResponseBuilder().build();
+        });
     }
 
     crow::response patchSlot(const crow::request& req, const std::string& slot_id) {
@@ -45,14 +47,19 @@ public:
             const auto start_time = std::string(request["startTime"]);
             const auto end_time = std::string(request["endTime"]);
             const int capacity = static_cast<int>(request["capacity"]);
-            db_slots.changeSlotInfo(slot_id, start_time, end_time, capacity);
+            return db->executeInTransaction([&]() {
+                db_slots.changeSlotInfo(slot_id, start_time, end_time, capacity);
+                return ResponseBuilder(request).build();
+            });
         }
         return ResponseBuilder(request).build();
     }
 
     crow::response deleteSlot(const std::string& slot_id) {
-        db_slots.deleteSlot(slot_id);
-        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+        return db->executeInTransaction([&]() {
+            db_slots.deleteSlot(slot_id);
+            return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+        });
     }
 
     crow::response addUserEntry(const crow::request& req, const std::string& slot_id) {
@@ -62,16 +69,19 @@ public:
             return ResponseBuilder(request).build();
         }
         const auto user_id = std::string(request["userId"]);
-        const auto user_enrollments = db_user.getUserEnrollments(user_id);
-        if (std::find(user_enrollments.begin(), user_enrollments.end(), slot_id) != user_enrollments.end()) {
-            return ResponseBuilder(RESPONSE_CODE::INVALID, "Already enrolled").build();
-        }
-        if (db_slots.isAtCapacity(slot_id)) {
-            return ResponseBuilder(RESPONSE_CODE::INVALID, "Slot is full. Join the queue instead.").build();
-        }
-        db_slots.addEntry(user_id, slot_id);
-        db_user.addEnrollment(user_id, slot_id);
-        return ResponseBuilder().build();
+        
+        return db->executeInTransaction([&]() {
+            const auto user_enrollments = db_user.getUserEnrollments(user_id, true);
+            if (std::find(user_enrollments.begin(), user_enrollments.end(), slot_id) != user_enrollments.end()) {
+                return ResponseBuilder(RESPONSE_CODE::INVALID, "Already enrolled").build();
+            }
+            if (db_slots.isAtCapacity(slot_id, true)) {
+                return ResponseBuilder(RESPONSE_CODE::INVALID, "Slot is full. Join the queue instead.").build();
+            }
+            db_slots.addEntry(user_id, slot_id);
+            db_user.addEnrollment(user_id, slot_id);
+            return ResponseBuilder().build();
+        });
     }
 
     crow::response deleteUserEntry(const crow::request& req, const std::string& slot_id) {
@@ -81,18 +91,21 @@ public:
             return ResponseBuilder(request).build();
         }
         const auto user_id = std::string(request["userId"]);
-        db_slots.removeEntry(user_id, slot_id);
-        db_user.removeEnrollment(user_id, slot_id);
+        
+        return db->executeInTransaction([&]() {
+            db_slots.removeEntry(user_id, slot_id);
+            db_user.removeEnrollment(user_id, slot_id);
 
-        const std::string next = db_slots.getFirstInQueue(slot_id);
-        if (!next.empty()) {
-            db_slots.removeFromQueue(next, slot_id);
-            db_user.removeQueuedSlot(next, slot_id);
-            db_slots.addEntry(next, slot_id);
-            db_user.addEnrollment(next, slot_id);
-        }
+            const std::string next = db_slots.getFirstInQueue(slot_id, true);
+            if (!next.empty()) {
+                db_slots.removeFromQueue(next, slot_id);
+                db_user.removeQueuedSlot(next, slot_id);
+                db_slots.addEntry(next, slot_id);
+                db_user.addEnrollment(next, slot_id);
+            }
 
-        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+            return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
+        });
     }
 
     template<typename AppType>
@@ -135,6 +148,7 @@ public:
     }
 
 private:
+    std::shared_ptr<Database> db;
     SlotManager db_slots;
     UserManager db_user;
 };

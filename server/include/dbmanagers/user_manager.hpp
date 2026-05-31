@@ -14,15 +14,15 @@ public:
 
     void banUser(const std::string &id, int duration);
 
-    [[nodiscard]] bool isAdmin(const std::string &id) const;
+    [[nodiscard]] bool isAdmin(const std::string &id, bool for_update = false) const;
 
-    [[nodiscard]] bool userExists(const std::string &id) const;
+    [[nodiscard]] bool userExists(const std::string &id, bool for_update = false) const;
 
     [[nodiscard]] int getUserHours(const std::string &id) const;
 
     [[nodiscard]] int getUnbanTime(const std::string &id) const;
 
-    std::vector<std::string> getUserEnrollments(const std::string& user_id) const;
+    std::vector<std::string> getUserEnrollments(const std::string& user_id, bool for_update = false) const;
 
     std::string getNameById(const std::string& user_id) const;
 
@@ -34,7 +34,7 @@ public:
 
     void removeQueuedSlot(const std::string& user_id, const std::string& slot_id);
 
-    [[nodiscard]] std::vector<std::string> getUserQueuedSlots(const std::string& user_id) const;
+    [[nodiscard]] std::vector<std::string> getUserQueuedSlots(const std::string& user_id, bool for_update = false) const;
 
     void deleteUser(const std::string &id);
 

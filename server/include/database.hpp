@@ -5,53 +5,64 @@
 #include <mutex>
 #include <pqxx/pqxx>
 #include <string>
+#include <queue>
+#include <condition_variable>
+#include <memory>
+#include "transaction_guard.hpp"
 
-/*
- *CONST CORRECTNESS NOTE
- *Some methods are marked const, some are not,
- *despite essentially being the same thing:
- *just execute a single SQL prompt.
- *Despite them formally not changing
- *the object, I decided to only mark
- *methods that don't even affect data in the
- *database as const. Otherwise, it might be misleading.
- */
-
-// Base class. It can do nothing.
 struct Database {
 public:
-    virtual ~Database() = default;
-
-    Database() = default;
-
-    explicit Database(const std::string &connect_string)
-        : conn_string(connect_string), conn(pqxx::connection(connect_string)) {
+    virtual ~Database() {
+        std::unique_lock l(m_mutex);
+        while (!m_conn_pool.empty()) {
+            m_conn_pool.pop();
+        }
     }
-
-    explicit Database(Database &&other) noexcept
-        : conn_string(other.get_conn_string()), conn(std::move(other.conn)) {
+    explicit Database(const std::string &connect_string)
+        : m_conn_string(connect_string) {
+        for (int i = 0; i < 12; i++) {
+            m_conn_pool.push(std::make_unique<pqxx::connection>(connect_string));
+        }
     }
 
     void init();
 
-    [[nodiscard]] std::string get_conn_string() const { return conn_string; }
+    [[nodiscard]] std::string getConnectionString() const { return m_conn_string; }
 
-    [[nodiscard]] bool isConnected() const { return conn.is_open(); }
+    std::shared_ptr<pqxx::connection> acquireConnection();
 
     template<typename ...Args>
-    auto execute(const std::string& command, Args&&... args) {
-        std::unique_lock l(mutex);
-        pqxx::work txn(conn);
-        auto res = txn.exec_params(command, std::forward<Args>(args)...);
-        txn.commit();
-        return res;
-    }
+    auto execute(const std::string& command, Args&&... args);
+    
+    template<typename Func>
+    auto executeInTransaction(Func&& f);
+
     static void loadEnv(const std::string& path = ".env");
 
+    static thread_local DBTransaction* current_txn;
 private:
-    const std::string conn_string;
-    mutable std::mutex mutex;
-    mutable pqxx::connection conn;
+    const std::string m_conn_string;
+    mutable std::mutex m_mutex;
+    std::condition_variable m_cond_var;
+    std::queue<std::unique_ptr<pqxx::connection>> m_conn_pool;
 };
+
+// use for simple single transactions
+template<typename ...Args>
+auto Database::execute(const std::string& command, Args&&... args) {
+    TransactionGuard guard(*this);
+    auto res = current_txn->execute(command, std::forward<Args>(args)...);
+    guard.commit();
+    return res;
+}
+
+// use for multiple operations in one transaction without commits for each operation
+template<typename Func>
+auto Database::executeInTransaction(Func&& f) {
+    TransactionGuard txn(*this);
+    auto res = f();
+    txn.commit();
+    return res;
+}
 
 #endif // SERVER_DATABASE_HPP

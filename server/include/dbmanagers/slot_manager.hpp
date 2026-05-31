@@ -6,6 +6,7 @@
 
 // I suppose you can guess what it does by the name. Come on. We're not
 // 5-year-olds here. Go on.
+// We are:)
 struct SlotManager {
 public:
     explicit SlotManager(std::shared_ptr<Database> database)
@@ -42,6 +43,17 @@ public:
     [[nodiscard]] std::vector<crow::json::wvalue> getGymAdmins(const std::string& gym_id) const;
 
     std::string getNameById(const std::string& user_id) const;
+
+    [[nodiscard]] bool isAtCapacity(const std::string& slot_id) const;
+
+    void addToQueue(const std::string& user_id, const std::string& slot_id);
+
+    void removeFromQueue(const std::string& user_id, const std::string& slot_id);
+
+    [[nodiscard]] std::string getFirstInQueue(const std::string& slot_id) const;
+
+    [[nodiscard]] std::vector<std::string> getQueueUserIds(const std::string& slot_id) const;
+
 private:
     std::shared_ptr<Database> db;
 };

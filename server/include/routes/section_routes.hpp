@@ -66,7 +66,8 @@ public:
         return {std::move(final)};
     }
 
-    void registerRoutes(crow::SimpleApp &app) {
+    template<typename AppType>
+    void registerRoutes(AppType &app) {
         CROW_ROUTE(app, "/v1/sections/gymList").methods("GET"_method)(
             // TODO: add campus selection
             [this](const crow::request &req) {

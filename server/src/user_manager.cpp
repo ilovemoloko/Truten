@@ -64,3 +64,25 @@ std::string UserManager::getNameById(const std::string &user_id) const {
     const auto res = db->execute("SELECT name FROM users WHERE id = $1", user_id)[0][0];
     return res.as<std::string>();
 }
+
+void UserManager::addQueuedSlot(const std::string &user_id, const std::string &slot_id) {
+    db->execute("UPDATE users SET queued_slots = array_append(queued_slots, $1) WHERE ID = $2", slot_id, user_id);
+}
+
+void UserManager::removeQueuedSlot(const std::string &user_id, const std::string &slot_id) {
+    db->execute("UPDATE users SET queued_slots = array_remove(queued_slots, $1) WHERE ID = $2", slot_id, user_id);
+}
+
+std::vector<std::string> UserManager::getUserQueuedSlots(const std::string &user_id) const {
+    const auto resp = db->execute("SELECT queued_slots FROM users WHERE ID = $1", user_id)[0][0];
+    auto arr = resp.as_array();
+    std::vector<std::string> to_return;
+    std::pair<pqxx::array_parser::juncture, std::string> elem;
+    do {
+        elem = arr.get_next();
+        if (elem.first == pqxx::array_parser::juncture::string_value) {
+            to_return.push_back(elem.second);
+        }
+    } while (elem.first != pqxx::array_parser::juncture::done);
+    return to_return;
+}

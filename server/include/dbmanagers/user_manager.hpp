@@ -30,6 +30,12 @@ public:
 
     void removeEnrollment(const std::string& user_id, const std::string& slot_id);
 
+    void addQueuedSlot(const std::string& user_id, const std::string& slot_id);
+
+    void removeQueuedSlot(const std::string& user_id, const std::string& slot_id);
+
+    [[nodiscard]] std::vector<std::string> getUserQueuedSlots(const std::string& user_id) const;
+
     void deleteUser(const std::string &id);
 
 private:

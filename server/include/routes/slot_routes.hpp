@@ -58,29 +58,45 @@ public:
     crow::response addUserEntry(const crow::request& req, const std::string& slot_id) {
         RequestHandler request(req);
         request.require("userId", crow::json::type::String);
-        if (request.responseIsOk()) {
-            const auto user_id = std::string(request["userId"]);
-            const auto user_enrollments = db_user.getUserEnrollments(user_id);
-            if (std::find(user_enrollments.begin(), user_enrollments.end(), slot_id) == user_enrollments.end()) {
-                db_slots.addEntry(user_id, slot_id);
-                db_user.addEnrollment(user_id, slot_id);
-            }
+        if (!request.responseIsOk()) {
+            return ResponseBuilder(request).build();
         }
-        return ResponseBuilder(request).build();
+        const auto user_id = std::string(request["userId"]);
+        const auto user_enrollments = db_user.getUserEnrollments(user_id);
+        if (std::find(user_enrollments.begin(), user_enrollments.end(), slot_id) != user_enrollments.end()) {
+            return ResponseBuilder(RESPONSE_CODE::INVALID, "Already enrolled").build();
+        }
+        if (db_slots.isAtCapacity(slot_id)) {
+            return ResponseBuilder(RESPONSE_CODE::INVALID, "Slot is full. Join the queue instead.").build();
+        }
+        db_slots.addEntry(user_id, slot_id);
+        db_user.addEnrollment(user_id, slot_id);
+        return ResponseBuilder().build();
     }
 
     crow::response deleteUserEntry(const crow::request& req, const std::string& slot_id) {
         RequestHandler request(req);
         request.require("userId", crow::json::type::String);
-        if (request.responseIsOk()) {
-            const auto user_id = std::string(request["userId"]);
-            db_slots.removeEntry(user_id, slot_id);
-            db_user.removeEnrollment(user_id, slot_id);
+        if (!request.responseIsOk()) {
+            return ResponseBuilder(request).build();
         }
-        return ResponseBuilder(request).build();
+        const auto user_id = std::string(request["userId"]);
+        db_slots.removeEntry(user_id, slot_id);
+        db_user.removeEnrollment(user_id, slot_id);
+
+        const std::string next = db_slots.getFirstInQueue(slot_id);
+        if (!next.empty()) {
+            db_slots.removeFromQueue(next, slot_id);
+            db_user.removeQueuedSlot(next, slot_id);
+            db_slots.addEntry(next, slot_id);
+            db_user.addEnrollment(next, slot_id);
+        }
+
+        return ResponseBuilder(RESPONSE_CODE::OK_EMPTY).build();
     }
 
-    void registerRoutes(crow::SimpleApp &app) {
+    template<typename AppType>
+    void registerRoutes(AppType &app) {
         CROW_ROUTE(app, "/v1/slots/<string>")
                 .methods("GET"_method)(
                     [this](const crow::request &req, const std::string &slot_id) {

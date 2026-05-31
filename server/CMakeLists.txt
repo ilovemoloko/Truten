@@ -15,39 +15,28 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/routes
         ${CMAKE_CURRENT_SOURCE_DIR}/include/dbmanagers
-        /usr/include
 )
 
 find_package(PkgConfig REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
 find_package(PostgreSQL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 include(FetchContent)
 
-set(TRUTEN_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
-set(CROW_LOCAL_DIR "${TRUTEN_ROOT_DIR}/Crow")
-set(JWT_LOCAL_DIR "${TRUTEN_ROOT_DIR}/jwt-cpp")
+# Use standalone ASIO bundled with Crow (avoids Boost.ASIO compatibility issues)
+set(CROW_USE_BOOST OFF CACHE BOOL "" FORCE)
 
-if(EXISTS "${CROW_LOCAL_DIR}/CMakeLists.txt")
-    add_subdirectory("${CROW_LOCAL_DIR}" "${CMAKE_BINARY_DIR}/crow-build")
-    set(CROW_INCLUDE_DIR "${CROW_LOCAL_DIR}/include")
-else()
-    FetchContent_Declare(
-            Crow
-            GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
-            GIT_TAG v1.2.0
-    )
-    FetchContent_MakeAvailable(Crow)
-    set(CROW_INCLUDE_DIR "${crow_SOURCE_DIR}/include")
-endif()
+FetchContent_Declare(
+        Crow
+        GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
+        GIT_TAG v1.2.1.2
+)
+FetchContent_MakeAvailable(Crow)
 
-# jwt-cpp (header-only). Prefer vendored submodule in libs/jwt-cpp, otherwise FetchContent.
+# jwt-cpp (header-only). Prefer vendored copy in libs/jwt-cpp, otherwise fetch.
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/libs/jwt-cpp/CMakeLists.txt)
     add_subdirectory(libs/jwt-cpp)
-elseif(EXISTS "${JWT_LOCAL_DIR}/CMakeLists.txt")
-    add_subdirectory("${JWT_LOCAL_DIR}" "${CMAKE_BINARY_DIR}/jwt-cpp-build")
 else()
     FetchContent_Declare(jwt-cpp
             GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
@@ -71,18 +60,18 @@ target_link_libraries(Server
         PRIVATE
         ${PQXX_LIBRARIES}
         ${PostgreSQL_LIBRARIES}
-        Boost::system
         Threads::Threads
         pthread
         OpenSSL::Crypto
+        OpenSSL::SSL
         jwt-cpp::jwt-cpp
+        Crow::Crow
 )
 
 target_include_directories(Server PRIVATE
         ${PQXX_INCLUDE_DIRS}
         ${PostgreSQL_INCLUDE_DIRS}
-        ${CROW_INCLUDE_DIR}
 )
 
 target_compile_options(Server PRIVATE ${PQXX_CFLAGS_OTHER})
-target_compile_definitions(Server PRIVATE ASIO_USE_BOOST=1)
+target_compile_definitions(Server PRIVATE ASIO_STANDALONE)

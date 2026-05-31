@@ -1,5 +1,6 @@
 #include "crow.h"
 #include "database.hpp"
+#include "jwt.hpp"
 #include "router.hpp"
 #include <cstdlib>
 
@@ -31,7 +32,7 @@ int main() {
     std::cerr << "Connecting to DB on " << (host ? host : "localhost") << "...\n";
 
     auto db = std::make_shared<Database>(connection_string);
-    crow::SimpleApp app;
+    crow::App<AuthMiddleware> app;
     ServerMain router(app, db);
     router.run();
     return 0;

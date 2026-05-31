@@ -39,7 +39,8 @@ void Database::init() {
         "password_hash TEXT NOT NULL,"
         "is_admin BOOLEAN DEFAULT FALSE,"
         "enrolled_slots UUID[],"
-        "unban_time TIMESTAMP)");
+        "unban_time TIMESTAMP,"
+        "queued_slots UUID[])");
 
     txn.exec("CREATE TABLE IF NOT EXISTS slots ("
         "ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
@@ -49,12 +50,17 @@ void Database::init() {
         "enrolled UUID[],"
         "start_time TIMESTAMP NOT NULL,"
         "end_time TIMESTAMP NOT NULL,"
-        "is_cancelled BOOLEAN DEFAULT FALSE)");
+        "is_cancelled BOOLEAN DEFAULT FALSE,"
+        "queue UUID[])");
 
     txn.exec("CREATE TABLE IF NOT EXISTS gyms ("
         "ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
         "name TEXT NOT NULL UNIQUE,"
         "admins UUID[])");
+
+    txn.exec("ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS queued_slots UUID[]");
+    txn.exec("ALTER TABLE IF EXISTS slots ADD COLUMN IF NOT EXISTS queue UUID[]");
+
     txn.commit();
 }
 

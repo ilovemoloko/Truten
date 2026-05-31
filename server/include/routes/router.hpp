@@ -1,17 +1,18 @@
 #ifndef TRUTEN_SERVER_ROUTER_HPP
 #define TRUTEN_SERVER_ROUTER_HPP
 
-#include "auth_routes.hpp"
 #include "crow.h"
 #include "database.hpp"
+#include "jwt.hpp"
+#include "auth_routes.hpp"
 #include "queue_routes.hpp"
 #include "section_routes.hpp"
 #include "slot_routes.hpp"
 #include "user_routes.hpp"
 
 struct ServerMain {
-    explicit ServerMain(const crow::SimpleApp &orig_app, std::shared_ptr<Database> orig_db)
-        : app(std::move(orig_app)), db(std::move(orig_db)) {
+    explicit ServerMain(crow::App<AuthMiddleware> &orig_app, std::shared_ptr<Database> orig_db)
+        : app(orig_app), db(std::move(orig_db)) {
     }
 
     void run() {
@@ -25,7 +26,7 @@ struct ServerMain {
          */
         db->init();
         AuthRoutes auth(db);
-        QueueRoutes queue;
+        QueueRoutes queue(db);
         SectionRoutes sections(db);
         SlotRoutes slots(db);
         UserRoutes users(db);
@@ -34,11 +35,13 @@ struct ServerMain {
         sections.registerRoutes(app);
         slots.registerRoutes(app);
         users.registerRoutes(app);
-        app.port(8080).multithreaded().run();
+        const char* port_env = std::getenv("PORT");
+        const uint16_t port = port_env ? static_cast<uint16_t>(std::stoi(port_env)) : 8080;
+        app.port(port).multithreaded().run();
     }
 
 private:
-    crow::SimpleApp app;
+    crow::App<AuthMiddleware> &app;
     std::shared_ptr<Database> db;
 };
 

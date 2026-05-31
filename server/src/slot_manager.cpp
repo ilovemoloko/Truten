@@ -84,6 +84,7 @@ crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id) cons
     auto res = getSlotInfo(slot_id)[0];
     crow::json::wvalue to_return;
     auto participants = loadUserList(res[4]);
+    auto queue_users = loadUserList(res[8]);
     //kill me
     to_return["slotId"] = res[0].as<std::string>();
     to_return["gymId"] = res[1].as<std::string>();
@@ -93,8 +94,9 @@ crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id) cons
     to_return["participants"] = std::move(participants);
     to_return["startTime"] = res[5].as<std::string>();
     to_return["endTime"] = res[6].as<std::string>();
+    to_return["queueCount"] = static_cast<short>(queue_users.size());
+    to_return["queue"] = std::move(queue_users);
     return to_return;
-
 }
 
 void SlotManager::addAdminToGym(const std::string gym_id, const std::string &new_admin) {
@@ -126,11 +128,51 @@ void SlotManager::deleteSlot(const std::string &slot_id) {
     auto participants = loadUserList(slot_info[4]);
     for (auto &part : participants) {
         std::string user_id = part["userId"].dump();
-        //sadly .dump() leaves the string in a weird format
-        //like ""a""
+        //sadly .dump() leaves the string in a weird format like ""a""
         user_id.pop_back();
         user_id.erase(user_id.begin());
         db->execute("UPDATE users SET enrolled_slots = array_remove(enrolled_slots, $1) WHERE ID = $2", slot_id, user_id);
     }
+    auto queue_users = loadUserList(slot_info[8]);
+    for (auto &part : queue_users) {
+        std::string user_id = part["userId"].dump();
+        user_id.pop_back();
+        user_id.erase(user_id.begin());
+        db->execute("UPDATE users SET queued_slots = array_remove(queued_slots, $1) WHERE ID = $2", slot_id, user_id);
+    }
     db->execute("DELETE FROM slots WHERE id = $1", slot_id);
+}
+
+bool SlotManager::isAtCapacity(const std::string &slot_id) const {
+    auto res = db->execute(
+        "SELECT capacity, COALESCE(array_length(enrolled, 1), 0) FROM slots WHERE id = $1", slot_id)[0];
+    return res[1].as<int>() >= res[0].as<int>();
+}
+
+void SlotManager::addToQueue(const std::string &user_id, const std::string &slot_id) {
+    db->execute("UPDATE slots SET queue = array_append(queue, $1) WHERE id = $2", user_id, slot_id);
+}
+
+void SlotManager::removeFromQueue(const std::string &user_id, const std::string &slot_id) {
+    db->execute("UPDATE slots SET queue = array_remove(queue, $1) WHERE id = $2", user_id, slot_id);
+}
+
+std::string SlotManager::getFirstInQueue(const std::string &slot_id) const {
+    auto res = db->execute("SELECT queue[1] FROM slots WHERE id = $1", slot_id)[0][0];
+    if (res.is_null()) return "";
+    return res.as<std::string>();
+}
+
+std::vector<std::string> SlotManager::getQueueUserIds(const std::string &slot_id) const {
+    auto field = db->execute("SELECT queue FROM slots WHERE id = $1", slot_id)[0][0];
+    auto arr = field.as_array();
+    std::vector<std::string> result;
+    std::pair<pqxx::array_parser::juncture, std::string> elem;
+    do {
+        elem = arr.get_next();
+        if (elem.first == pqxx::array_parser::juncture::string_value) {
+            result.push_back(elem.second);
+        }
+    } while (elem.first != pqxx::array_parser::juncture::done);
+    return result;
 }

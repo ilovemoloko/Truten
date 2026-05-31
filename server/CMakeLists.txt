@@ -26,16 +26,28 @@ find_package(OpenSSL REQUIRED)
 
 include(FetchContent)
 
-FetchContent_Declare(
-        Crow
-        GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
-        GIT_TAG v1.2.0
-)
-FetchContent_MakeAvailable(Crow)
+set(TRUTEN_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
+set(CROW_LOCAL_DIR "${TRUTEN_ROOT_DIR}/Crow")
+set(JWT_LOCAL_DIR "${TRUTEN_ROOT_DIR}/jwt-cpp")
+
+if(EXISTS "${CROW_LOCAL_DIR}/CMakeLists.txt")
+    add_subdirectory("${CROW_LOCAL_DIR}" "${CMAKE_BINARY_DIR}/crow-build")
+    set(CROW_INCLUDE_DIR "${CROW_LOCAL_DIR}/include")
+else()
+    FetchContent_Declare(
+            Crow
+            GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
+            GIT_TAG v1.2.0
+    )
+    FetchContent_MakeAvailable(Crow)
+    set(CROW_INCLUDE_DIR "${crow_SOURCE_DIR}/include")
+endif()
 
 # jwt-cpp (header-only). Prefer vendored submodule in libs/jwt-cpp, otherwise FetchContent.
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/libs/jwt-cpp/CMakeLists.txt)
     add_subdirectory(libs/jwt-cpp)
+elseif(EXISTS "${JWT_LOCAL_DIR}/CMakeLists.txt")
+    add_subdirectory("${JWT_LOCAL_DIR}" "${CMAKE_BINARY_DIR}/jwt-cpp-build")
 else()
     FetchContent_Declare(jwt-cpp
             GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
@@ -69,7 +81,7 @@ target_link_libraries(Server
 target_include_directories(Server PRIVATE
         ${PQXX_INCLUDE_DIRS}
         ${PostgreSQL_INCLUDE_DIRS}
-        ${crow_SOURCE_DIR}/include
+        ${CROW_INCLUDE_DIR}
 )
 
 target_compile_options(Server PRIVATE ${PQXX_CFLAGS_OTHER})

@@ -7,6 +7,8 @@
 #include "response_builder.hpp"
 #include "auth_manager.hpp"
 #include "user_manager.hpp"
+#include <memory>
+#include <string>
 
 struct AuthRoutes {
 public:
@@ -48,9 +50,8 @@ public:
         }
         const auto email = static_cast<std::string>(request["email"]);
         const auto password = static_cast<std::string>(request["password"]);
-        const std::string real_password = db_auth.getPasswordByEmail(email);
         const std::string user_id = db_auth.getUserIdByEmail(email);
-        if (password == real_password) {
+        if (db_auth.verifyPassword(email, password)) {
             // TODO: not mvp, but add JWT
             bool is_admin = db_user.isAdmin(user_id);
             ResponseBuilder resp;

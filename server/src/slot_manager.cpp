@@ -1,8 +1,10 @@
 #include "database.hpp"
 #include "slot_manager.hpp"
 
-pqxx::result SlotManager::getSlotInfo(const std::string &id) const {
-    auto res = db->execute("SELECT * FROM slots WHERE ID = $1", id);
+pqxx::result SlotManager::getSlotInfo(const std::string &id, bool for_update) const {
+    std::string query = "SELECT * FROM slots WHERE ID = $1";
+    if (for_update) query += " FOR UPDATE";
+    auto res = db->execute(query, id);
     return res;
 }
 
@@ -80,8 +82,8 @@ std::vector<crow::json::wvalue> SlotManager::getGymSlots(const std::string &gym_
     return response;
 }
 
-crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id) const {
-    auto res = getSlotInfo(slot_id)[0];
+crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id, bool for_update) const {
+    auto res = getSlotInfo(slot_id, for_update)[0];
     crow::json::wvalue to_return;
     auto participants = loadUserList(res[4]);
     auto queue_users = loadUserList(res[8]);
@@ -124,7 +126,7 @@ void SlotManager::createSlot(const std::string &gym_id, std::string &time_begin,
 }
 
 void SlotManager::deleteSlot(const std::string &slot_id) {
-    auto slot_info = getSlotInfo(slot_id)[0];
+    auto slot_info = getSlotInfo(slot_id, true)[0];
     auto participants = loadUserList(slot_info[4]);
     for (auto &part : participants) {
         std::string user_id = part["userId"].dump();
@@ -143,9 +145,10 @@ void SlotManager::deleteSlot(const std::string &slot_id) {
     db->execute("DELETE FROM slots WHERE id = $1", slot_id);
 }
 
-bool SlotManager::isAtCapacity(const std::string &slot_id) const {
-    auto res = db->execute(
-        "SELECT capacity, COALESCE(array_length(enrolled, 1), 0) FROM slots WHERE id = $1", slot_id)[0];
+bool SlotManager::isAtCapacity(const std::string &slot_id, bool for_update) const {
+    std::string query = "SELECT capacity, COALESCE(array_length(enrolled, 1), 0) FROM slots WHERE id = $1";
+    if (for_update) query += " FOR UPDATE";
+    auto res = db->execute(query, slot_id)[0];
     return res[1].as<int>() >= res[0].as<int>();
 }
 
@@ -157,16 +160,19 @@ void SlotManager::removeFromQueue(const std::string &user_id, const std::string 
     db->execute("UPDATE slots SET queue = array_remove(queue, $1) WHERE id = $2", user_id, slot_id);
 }
 
-std::string SlotManager::getFirstInQueue(const std::string &slot_id) const {
-    auto res = db->execute("SELECT queue[1] FROM slots WHERE id = $1", slot_id)[0][0];
+std::string SlotManager::getFirstInQueue(const std::string &slot_id, bool for_update) const {
+    std::string query = "SELECT queue[1] FROM slots WHERE id = $1";
+    if (for_update) query += " FOR UPDATE";
+    auto res = db->execute(query, slot_id)[0][0];
     if (res.is_null()) return "";
     return res.as<std::string>();
 }
 
 std::vector<std::string> SlotManager::getQueueUserIds(const std::string &slot_id) const {
     auto field = db->execute("SELECT queue FROM slots WHERE id = $1", slot_id)[0][0];
-    auto arr = field.as_array();
     std::vector<std::string> result;
+    if (field.is_null()) return result;
+    auto arr = field.as_array();
     std::pair<pqxx::array_parser::juncture, std::string> elem;
     do {
         elem = arr.get_next();

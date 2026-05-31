@@ -11,7 +11,7 @@
 
 struct SectionRoutes {
 public:
-    explicit SectionRoutes(const std::shared_ptr<Database> &db) : db_slot(db), db_user(db) {
+    explicit SectionRoutes(const std::shared_ptr<Database> &db) : db_(db), db_slot(db), db_user(db) {
     }
 
     [[nodiscard]] crow::response getGyms() const {
@@ -40,11 +40,13 @@ public:
         }
         auto gym_name = static_cast<std::string>(request["gymName"]);
         auto creator_id = static_cast<std::string>(request["creatorId"]);
-        if (!db_user.isAdmin(creator_id)) {
-            return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
-        }
-        db_slot.createGym(gym_name, creator_id);
-        return ResponseBuilder().build();
+        return db_->executeInTransaction([&]() {
+            if (!db_user.isAdmin(creator_id, true)) {
+                return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
+            }
+            db_slot.createGym(gym_name, creator_id);
+            return ResponseBuilder().build();
+        });
     }
 
     crow::response addAdminToGym(const crow::request& req, const std::string& gym_id) {
@@ -96,6 +98,7 @@ public:
     }
 
 private:
+    std::shared_ptr<Database> db_;
     SlotManager db_slot;
     UserManager db_user;
 };

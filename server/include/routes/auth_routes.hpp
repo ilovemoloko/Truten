@@ -13,7 +13,7 @@ struct AuthRoutes {
 public:
     using crow::json::type::String;
 
-    explicit AuthRoutes(const std::shared_ptr<Database>& db) : db_auth(db), db_user(db) {
+    explicit AuthRoutes(const std::shared_ptr<Database>& db) : db_(db), db_auth(db), db_user(db) {
     }
 
     crow::response createAccount(const crow::request &req) {
@@ -27,19 +27,22 @@ public:
         const auto email = static_cast<std::string>(request["email"]);
         const auto password = static_cast<std::string>(request["password"]);
         const auto name = static_cast<std::string>(request["name"]);
-        if (db_auth.emailExists(email)) {
-            return ResponseBuilder(RESPONSE_CODE::INVALID).build();
-        }
-        db_auth.createUser(email, password, name);
-        const std::string user_id = db_auth.getUserIdByEmail(email);
-        const std::string access_token = make_access_token(user_id, false);
-        const std::string refresh_token = make_refresh_token(user_id);
-        ResponseBuilder resp;
-        resp.addField("userId", user_id);
-        resp.addField("isAdmin", false);
-        resp.addField("accessToken", access_token);
-        resp.addField("refreshToken", refresh_token);
-        return resp.build();
+        
+        return db_->executeInTransaction([&]() {
+            if (db_auth.emailExists(email, true)) {
+                return ResponseBuilder(RESPONSE_CODE::INVALID).build();
+            }
+            db_auth.createUser(email, password, name);
+            const std::string user_id = db_auth.getUserIdByEmail(email);
+            const std::string access_token = make_access_token(user_id, false);
+            const std::string refresh_token = make_refresh_token(user_id);
+            ResponseBuilder resp;
+            resp.addField("userId", user_id);
+            resp.addField("isAdmin", false);
+            resp.addField("accessToken", access_token);
+            resp.addField("refreshToken", refresh_token);
+            return resp.build();
+        });
     }
 
     crow::response login(const crow::request &req) const {
@@ -51,20 +54,23 @@ public:
         }
         const auto email = static_cast<std::string>(request["email"]);
         const auto password = static_cast<std::string>(request["password"]);
-        const std::string real_password = db_auth.getPasswordByEmail(email);
-        const std::string user_id = db_auth.getUserIdByEmail(email);
-        if (password != real_password) {
-            return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
-        }
-        const bool is_admin = db_user.isAdmin(user_id);
-        const std::string access_token = make_access_token(user_id, is_admin);
-        const std::string refresh_token = make_refresh_token(user_id);
-        ResponseBuilder resp;
-        resp.addField("userId", user_id);
-        resp.addField("isAdmin", is_admin);
-        resp.addField("accessToken", access_token);
-        resp.addField("refreshToken", refresh_token);
-        return resp.build();
+        
+        return db_->executeInTransaction([&]() {
+            const std::string real_password = db_auth.getPasswordByEmail(email);
+            const std::string user_id = db_auth.getUserIdByEmail(email);
+            if (password != real_password) {
+                return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
+            }
+            const bool is_admin = db_user.isAdmin(user_id);
+            const std::string access_token = make_access_token(user_id, is_admin);
+            const std::string refresh_token = make_refresh_token(user_id);
+            ResponseBuilder resp;
+            resp.addField("userId", user_id);
+            resp.addField("isAdmin", is_admin);
+            resp.addField("accessToken", access_token);
+            resp.addField("refreshToken", refresh_token);
+            return resp.build();
+        });
     }
 
     crow::response refresh(const crow::request &req) const {
@@ -86,11 +92,13 @@ public:
             }
 
             const std::string user_id = decoded.get_payload_claim("sub").as_string();
-            const bool is_admin = db_user.isAdmin(user_id);
-            const std::string new_access = make_access_token(user_id, is_admin);
-            ResponseBuilder resp;
-            resp.addField("accessToken", new_access);
-            return resp.build();
+            return db_->executeInTransaction([&]() {
+                const bool is_admin = db_user.isAdmin(user_id);
+                const std::string new_access = make_access_token(user_id, is_admin);
+                ResponseBuilder resp;
+                resp.addField("accessToken", new_access);
+                return resp.build();
+            });
         } catch (...) {
             return ResponseBuilder(RESPONSE_CODE::NO_ACCESS, "Invalid refresh token").build();
         }
@@ -115,6 +123,7 @@ public:
     }
 
 private:
+    std::shared_ptr<Database> db_;
     AuthManager db_auth;
     UserManager db_user;
 };

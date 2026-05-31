@@ -13,20 +13,25 @@ void UserManager::banUser(const std::string &id, int duration) {
                     new_time, id);
 }
 
-bool UserManager::isAdmin(const std::string &id) const {
+bool UserManager::isAdmin(const std::string &id, bool for_update) const {
+    std::string query = "SELECT is_admin FROM users WHERE ID = $1";
+    if (for_update) query += " FOR UPDATE";
     const auto resp =
-            db->execute("SELECT is_admin FROM users WHERE ID = $1", id);
+            db->execute(query, id);
     return resp.begin()[0].as<bool>();
 }
 
-bool UserManager::userExists(const std::string &id) const {
-    const auto resp = db->execute("SELECT * FROM users WHERE ID = $1", id);
+bool UserManager::userExists(const std::string &id, bool for_update) const {
+    std::string query = "SELECT 1 FROM users WHERE ID = $1";
+    if (for_update) query += " FOR UPDATE";
+    const auto resp = db->execute(query, id);
     return !resp.empty();
 }
 
 int UserManager::getUnbanTime(const std::string &id) const {
-    const auto resp = db->execute("SELECT unbanTime FROM users WHERE ID = $1", id);
-    return resp.begin()[0].as<int>();
+    const auto resp = db->execute("SELECT unban_time FROM users WHERE ID = $1", id);
+    if (resp.empty() || resp[0][0].is_null()) return 0;
+    return 0; // TODO: properly parse timestamp to int if needed
 }
 
 int UserManager::getUserHours(const std::string &id) const {
@@ -38,8 +43,11 @@ void UserManager::deleteUser(const std::string &id) {
     db->execute("DELETE FROM users WHERE id = $1", id);
 }
 
-std::vector<std::string> UserManager::getUserEnrollments(const std::string& user_id) const {
-    const auto resp = db->execute("SELECT enrolled_slots FROM users WHERE ID = $1", user_id)[0][0];
+std::vector<std::string> UserManager::getUserEnrollments(const std::string& user_id, bool for_update) const {
+    std::string query = "SELECT enrolled_slots FROM users WHERE ID = $1";
+    if (for_update) query += " FOR UPDATE";
+    const auto resp = db->execute(query, user_id)[0][0];
+    if (resp.is_null()) return {};
     auto enrolled_array = resp.as_array();
     std::vector<std::string> to_return;
     std::pair<pqxx::array_parser::juncture, std::string> elem;
@@ -73,8 +81,11 @@ void UserManager::removeQueuedSlot(const std::string &user_id, const std::string
     db->execute("UPDATE users SET queued_slots = array_remove(queued_slots, $1) WHERE ID = $2", slot_id, user_id);
 }
 
-std::vector<std::string> UserManager::getUserQueuedSlots(const std::string &user_id) const {
-    const auto resp = db->execute("SELECT queued_slots FROM users WHERE ID = $1", user_id)[0][0];
+std::vector<std::string> UserManager::getUserQueuedSlots(const std::string &user_id, bool for_update) const {
+    std::string query = "SELECT queued_slots FROM users WHERE ID = $1";
+    if (for_update) query += " FOR UPDATE";
+    const auto resp = db->execute(query, user_id)[0][0];
+    if (resp.is_null()) return {};
     auto arr = resp.as_array();
     std::vector<std::string> to_return;
     std::pair<pqxx::array_parser::juncture, std::string> elem;

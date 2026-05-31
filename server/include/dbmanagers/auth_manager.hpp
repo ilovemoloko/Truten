@@ -19,7 +19,7 @@ public:
 
     [[nodiscard]] std::string getPasswordByEmail(const std::string &email) const;
 
-    [[nodiscard]] bool emailExists(const std::string &email) const;
+    [[nodiscard]] bool emailExists(const std::string &, bool for_update = false) const;
 
     void createUser(const std::string &email, const std::string &password,
                     const std::string &name, bool is_admin = false);

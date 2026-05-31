@@ -47,8 +47,7 @@ endif()
 
 add_executable(Server src/main.cpp
         src/database.cpp
-        include/dbmanagers/auth_manager.hpp
-        include/dbmanagers/user_manager.hpp
+        src/transaction_guard.cpp
         src/slot_manager.cpp
         src/user_manager.cpp
         src/auth_manager.cpp

@@ -1,34 +1,16 @@
 #ifndef SERVER_REQUEST_HANDLER_HPP
 #define SERVER_REQUEST_HANDLER_HPP
 #include "crow.h"
-#include "status_codes.hpp"
-#include <vector>
-
 struct ResponseBuilder;
 
 struct RequestHandler {
     friend struct ResponseBuilder;
 
-    explicit RequestHandler(const crow::request &req)
-        : response_code(*RESPONSE_CODE::OK), request(req),
-          body(crow::json::load(req.body)) {
-    }
+    explicit RequestHandler(const crow::request &req);
 
     void
     require(const std::string &field_name,
-            const crow::json::type required_type = crow::json::type::Object) {
-        if (!body.has(field_name)) {
-            response_code = *RESPONSE_CODE::INVALID;
-            error_message = "Missing required field " + field_name;
-            return;
-        }
-        if (required_type == crow::json::type::Object)
-            return;
-        if (body[field_name].t() != required_type) {
-            response_code = *RESPONSE_CODE::INVALID;
-            error_message = "Invalid type of " + field_name;
-        }
-    }
+            crow::json::type required_type = crow::json::type::Object);
 
     [[nodiscard]] bool responseIsOk() const {
         return (response_code == 200 || response_code == 204);

@@ -48,9 +48,18 @@ endif()
 add_executable(Server src/main.cpp
         src/database.cpp
         src/transaction_guard.cpp
-        src/slot_manager.cpp
-        src/user_manager.cpp
-        src/auth_manager.cpp
+        src/dbmanagers/slot_manager.cpp
+        src/dbmanagers/user_manager.cpp
+        src/dbmanagers/auth_manager.cpp
+        src/request_handler.cpp
+        src/routes/auth_routes.cpp
+        src/routes/queue_routes.cpp
+        src/routes/section_routes.cpp
+        src/routes/slot_routes.cpp
+        src/routes/user_routes.cpp
+        src/jwt.cpp
+        src/request_handler.cpp
+        src/response_builder.cpp
 )
 
 pkg_check_modules(PQXX REQUIRED libpqxx)

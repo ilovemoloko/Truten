@@ -2,6 +2,7 @@
 #include "database.hpp"
 #include "jwt.hpp"
 #include "router.hpp"
+#include <thread>
 #include <cstdlib>
 
 int main() {

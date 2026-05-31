@@ -60,6 +60,25 @@ void GymModel::fetchUserGainedHours(const QString &userId) {
     });
 };
 
+void GymModel::addGymAdmin(const QString &gymId, const QString &userId) {
+    if (!isAdmin()) {
+        emit gymError("Недостаточно прав");
+        return;
+    }
+    QJsonObject json;
+    json["userId"] = userId;
+    QNetworkReply *reply = sendPostRequest(
+        "/sections/" + gymId + "/admins", json, Token::WITHOUT_TOKEN
+    );
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(
+            reply,
+            [this](const QJsonObject &data) { emit gymAdminAdded(data); },
+            [this](const QString &err) { emit gymError(err); }
+        );
+    });
+}
+
 void GymModel::addHours(int hours, const QString &userId) {
     if (!isAdmin()) {
         emit gymError("Недостаточно прав");

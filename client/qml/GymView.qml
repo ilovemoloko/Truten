@@ -11,6 +11,9 @@ Page {
     // variables for controlling current day
     property date selectedDate: new Date()
     property int dayOffset: 0
+
+    property string toastMessage: ""
+    property bool toastIsError: false
     property Component inputBg: Component {
             Rectangle {
                 implicitHeight: 45
@@ -21,13 +24,18 @@ Page {
             }
         }
 
-    Timer { // timer for hidding errors messages
+    Timer {
         id: errorTimer
-        interval: 2000
+        interval: 3000
         repeat: false
-        onTriggered: {
-            gymMV.errorMessage = ""
-        }
+        onTriggered: gymMV.errorMessage = ""
+    }
+
+    Timer {
+        id: toastTimer
+        interval: 2500
+        repeat: false
+        onTriggered: rootGymView.toastMessage = ""
     }
 
     function updateDate() {
@@ -51,14 +59,49 @@ Page {
 
     Connections {
         target: gymMV
+
         function onActionSuccess(message) {
-            console.log("Success:", message)
+            rootGymView.toastIsError = false
+            rootGymView.toastMessage = message
+            toastTimer.restart()
+        }
+
+        function onActionError(message) {
+            rootGymView.toastIsError = true
+            rootGymView.toastMessage = message
+            toastTimer.restart()
         }
 
         function onErrorMessageChanged() {
-                if (gymMV.errorMessage !== "") {
-                    errorTimer.restart()
-                }
+            if (gymMV.errorMessage !== "") {
+                errorTimer.restart()
+            }
+        }
+    }
+
+    Rectangle {
+        id: toast
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottomMargin: 24
+        width: Math.min(toastLabel.implicitWidth + 48, rootGymView.width - 40)
+        height: 44
+        radius: 22
+        color: rootGymView.toastIsError ? "#b91c1c" : "#166534"
+        visible: rootGymView.toastMessage !== ""
+        z: 100
+
+        Text {
+            id: toastLabel
+            anchors.centerIn: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            text: rootGymView.toastMessage
+            color: "#ffffff"
+            font.pixelSize: 13
+            font.weight: Font.Medium
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
         }
     }
 
@@ -104,29 +147,66 @@ Page {
 
             ColumnLayout {
                 Layout.alignment: Qt.AlignRight
-                spacing: 2
+                spacing: 4
+
                 Text {
                     text: gymMV.isAdmin ? "Админ" : "Студент"
-                    font.pixelSize: 14
+                    font.pixelSize: 13
                     font.weight: Font.Medium
                     color: "#57534e"
-                    horizontalAlignment: Text.AlignRight
+                    Layout.alignment: Qt.AlignRight
                 }
+
+                Rectangle {
+                    width: 110
+                    height: 8
+                    radius: 4
+                    color: "#f0f0f0"
+                    Layout.alignment: Qt.AlignRight
+
+                    Rectangle {
+                        width: parent.width * Math.min(
+                            gymMV.hoursNeeded > 0
+                                ? gymMV.hoursCount / gymMV.hoursNeeded
+                                : 0,
+                            1.0
+                        )
+                        height: parent.height
+                        radius: parent.radius
+                        color: gymMV.hoursCount >= gymMV.hoursNeeded ? "#166534" : "#d97706"
+                        Behavior on width { NumberAnimation { duration: 300 } }
+                    }
+                }
+
                 Text {
-                    text: "Часы: " + gymMV.hoursCount + " / " + gymMV.hoursNeeded
-                    font.pixelSize: 12
+                    text: gymMV.hoursCount + " / " + gymMV.hoursNeeded + " ч."
+                    font.pixelSize: 11
                     color: "#78716c"
-                    horizontalAlignment: Text.AlignRight
+                    Layout.alignment: Qt.AlignRight
                 }
             }
 
-            Button {
-                text: "Выйти"
+            ColumnLayout {
+                spacing: 4
                 Layout.alignment: Qt.AlignRight | Qt.AlignTop
-                background: Rectangle { color: "#fee2e2"; radius: 6 }
-                palette.buttonText: "#b91c1c"
-                onClicked: {
-                    rootGymView.logoutRequested()
+
+                Button {
+                    text: "Профиль"
+                    Layout.alignment: Qt.AlignRight
+                    background: Rectangle { color: "#f5f5f5"; radius: 6 }
+                    palette.buttonText: "#57534e"
+                    onClicked: mainStack.push("ProfileView.qml")
+                }
+
+                Button {
+                    text: "Выйти"
+                    Layout.alignment: Qt.AlignRight
+                    background: Rectangle { color: "#fee2e2"; radius: 6 }
+                    palette.buttonText: "#b91c1c"
+                    onClicked: {
+                        gymMV.clearUserState()
+                        rootGymView.logoutRequested()
+                    }
                 }
             }
         }
@@ -166,7 +246,7 @@ Page {
                         leftPadding: 16
                         font.pixelSize: 14
                         color: "#2d241e"
-                        enabled: !authMV.isLoading
+                        enabled: !gymMV.isLoading
 
                         background: Rectangle {
                             radius: 8
@@ -266,6 +346,35 @@ Page {
                 Layout.fillHeight: true
                 spacing: 10
 
+                // ADMIN PANEL: Add gym admin
+                RowLayout {
+                    Layout.fillWidth: true
+                    visible: gymMV.isAdmin
+                    spacing: 10
+
+                    TextField {
+                        id: newAdminIdField
+                        Layout.fillWidth: true
+                        placeholderText: "ID нового администратора"
+                        Layout.preferredHeight: 45
+                        leftPadding: 16
+                        font.pixelSize: 14
+                        color: "#2d241e"
+                        background: Rectangle { radius: 8; color: "#f5f5f5" }
+                    }
+                    Button {
+                        text: "Добавить"
+                        background: Rectangle { color: "#2d241e"; radius: 8 }
+                        palette.buttonText: "white"
+                        onClicked: {
+                            if (newAdminIdField.text !== "") {
+                                gymMV.addGymAdmin(newAdminIdField.text)
+                                newAdminIdField.text = ""
+                            }
+                        }
+                    }
+                }
+
                 // ADMIN PANEL: Create slot
                 RowLayout {
                     id: adminRow
@@ -277,7 +386,7 @@ Page {
                         id: slotStart
                         placeholderText: "Начало"
                         text: "10:00"
-                        inputMask: "99:00"
+                        inputMask: "99:99"
                         Layout.fillWidth: true
                         font.pixelSize: 16
                         color: "#2d241e"
@@ -290,7 +399,7 @@ Page {
                         id: slotEnd
                         placeholderText: "Конец"
                         text: "11:30"
-                        inputMask: "99:00"
+                        inputMask: "99:99"
                         Layout.fillWidth: true
                         font.pixelSize: 16
                         color: "#2d241e"
@@ -418,11 +527,15 @@ Page {
                         property bool isBooked: false
                         property bool isQueued: false
                         property bool isFull: model.participantsCount >= model.capacity
+                        property bool isPast: model.startTime < new Date()
 
                         Connections {
                             target: gymMV
                             function onBookedSlotsChanged() {
                                 isBooked = gymMV.isSlotBooked(model.slotId)
+                                isQueued = gymMV.isSlotQueued(model.slotId)
+                            }
+                            function onQueuedSlotsChanged() {
                                 isQueued = gymMV.isSlotQueued(model.slotId)
                             }
                         }
@@ -431,8 +544,11 @@ Page {
                             isQueued = gymMV.isSlotQueued(model.slotId)
                         }
 
-                        // green=booked, yellow=queued, red=full
-                        color: isBooked ? "#dcfce7" : (isQueued ? "#fef9c3" : (isFull ? "#fee2e2" : "transparent"))
+                        color: isBooked ? "#dcfce7"
+                             : isQueued ? "#fef9c3"
+                             : isFull   ? "#fee2e2"
+                             : isPast   ? "#f5f5f5"
+                             : "transparent"
 
                         ColumnLayout {
                             id: contentCol
@@ -467,14 +583,15 @@ Page {
                                     }
 
 
-                                    // new button: записаться/встать в очередь/выйти из очереди/отменить
                                     Button {
                                         id: actionBtn
                                         visible: !gymMV.isAdmin
                                         Layout.preferredWidth: 150
                                         Layout.preferredHeight: 35
+                                        enabled: !slotDelegate.isPast
 
                                         property string btnText: {
+                                            if (slotDelegate.isPast) return "Прошедший"
                                             if (slotDelegate.isBooked) return "Отменить"
                                             if (slotDelegate.isQueued) return "Выйти из очереди"
                                             if (slotDelegate.isFull) return "Встать в очередь"

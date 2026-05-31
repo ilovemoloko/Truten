@@ -37,6 +37,7 @@ qt_add_qml_module(appclient
     QML_FILES
         qml/AuthView.qml
         qml/GymView.qml
+        qml/ProfileView.qml
 
         SOURCES include/SlotsList.h
 )

@@ -22,7 +22,6 @@ public:
         int capacity
     );
     void getBookedSlotsIds(const QString &userId = getUserId());
-    //add queue methods
     void joinQueue(const QString &slotId);
     void leaveQueue(const QString &slotId);
     void getQueuedSlotsIds(const QString &userId = getUserId());
@@ -34,7 +33,6 @@ signals:
     void slotCreated(const QJsonObject &data);
     void slotRemoved(const QJsonObject &data);
     void bookedSlotsIdsFinished(const QJsonObject &data);
-    //new signals for queue
     void queueJoinFinished(const QJsonObject &data);
     void queueLeaveFinished(const QJsonObject &data);
     void queuedSlotsIdsFinished(const QJsonObject &data);

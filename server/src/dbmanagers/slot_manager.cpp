@@ -168,6 +168,16 @@ std::string SlotManager::getFirstInQueue(const std::string &slot_id, bool for_up
     return res.as<std::string>();
 }
 
+void SlotManager::resetWeekly() {
+    db->execute("UPDATE slots "
+                "SET start_time = start_time + INTERVAL '7 days', "
+                "end_time = end_time + INTERVAL '7 days', "
+                "enrolled = '{}', "
+                "queue = '{}', "
+                "notified = FALSE");
+    db->execute("UPDATE users SET enrolled_slots = '{}', queued_slots = '{}'");
+}
+
 std::vector<std::string> SlotManager::getQueueUserIds(const std::string &slot_id) const {
     auto field = db->execute("SELECT queue FROM slots WHERE id = $1", slot_id)[0][0];
     std::vector<std::string> result;

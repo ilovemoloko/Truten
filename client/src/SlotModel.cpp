@@ -95,32 +95,6 @@ void SlotModel::cancelBooking(const QString &slotId) {
     });
 };
 
-void SlotModel::joinQueue(const QString &slotId) {
-    QNetworkReply *reply = sendPostRequest(
-        "/queue/" + slotId + "/join", {}, Token::WITHOUT_TOKEN
-    );
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        handleReply(
-            reply,
-            [this](const QJsonObject &data) { emit queueJoined(data); },
-            [this](const QString &err) { emit slotError(err); }
-        );
-    });
-}
-
-void SlotModel::leaveQueue(const QString &slotId) {
-    QNetworkReply *reply = sendPostRequest(
-        "/queue/" + slotId + "/leave", {}, Token::WITHOUT_TOKEN
-    );
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        handleReply(
-            reply,
-            [this](const QJsonObject &data) { emit queueLeft(data); },
-            [this](const QString &err) { emit slotError(err); }
-        );
-    });
-}
-
 void SlotModel::getBookedSlotsIds(const QString &userId) {
     QNetworkReply *reply = sendGetRequest(
         "/user/" + userId + "/enrollments", Token::WITH_TOKEN

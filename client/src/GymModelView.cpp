@@ -50,17 +50,9 @@ GymModelView::GymModelView(
         &GymModelView::onBookedSlotsIdsFinished
     );
     connect(
-        m_slotModel, &SlotModel::queueJoined, this,
-        &GymModelView::onQueueJoined
-    );
-    connect(
-        m_slotModel, &SlotModel::queueLeft, this, &GymModelView::onQueueLeft
-    );
-    connect(
         m_gymModel, &GymModel::gymAdminAdded, this,
         &GymModelView::onGymAdminAdded
     );
-
     connect(m_slotModel, &SlotModel::queueJoinFinished, this, &GymModelView::onQueueJoined);
     connect(m_slotModel, &SlotModel::queueLeaveFinished, this, &GymModelView::onQueueLeft);
     connect(m_slotModel, &SlotModel::queuedSlotsIdsFinished, this, &GymModelView::onQueuedSlotsIdsFinished);
@@ -366,20 +358,6 @@ void GymModelView::onHoursLoaded(const QJsonObject &data) {
     emit userInfoChanged();
 };
 
-void GymModelView::joinQueue(const QString &slotId) {
-    beginActionRequest();
-    m_slotModel->joinQueue(slotId);
-}
-
-void GymModelView::leaveQueue(const QString &slotId) {
-    beginActionRequest();
-    m_slotModel->leaveQueue(slotId);
-}
-
-bool GymModelView::isInQueue(const QString &slotId) {
-    return m_queuedSlotIds.contains(slotId);
-}
-
 void GymModelView::addGymAdmin(const QString &userId) {
     if (m_selectedGymId.isEmpty()) {
         emit actionError("Не выбран зал");
@@ -396,7 +374,7 @@ void GymModelView::fetchStats() {
 
 void GymModelView::clearUserState() {
     m_BookedSlotIds.clear();
-    m_queuedSlotIds.clear();
+    m_QueuedSlotIds.clear();
     m_gyms.clear();
     m_gymStatsList.clear();
     m_slotsListModel->setSlots({});
@@ -405,24 +383,6 @@ void GymModelView::clearUserState() {
     emit bookedSlotsChanged();
     emit queuedSlotsChanged();
     emit gymStatsChanged();
-}
-
-void GymModelView::onQueueJoined(const QJsonObject &data) {
-    endActionRequest();
-    // slotId not returned from server, so we can't know which slot joined
-    // Re-fetch slots to get updated participantsCount and refresh queue state
-    if (!m_selectedGymId.isEmpty()) {
-        loadSlots(m_selectedGymId);
-    }
-    emit actionSuccess("Вы добавлены в очередь!");
-}
-
-void GymModelView::onQueueLeft(const QJsonObject &data) {
-    endActionRequest();
-    if (!m_selectedGymId.isEmpty()) {
-        loadSlots(m_selectedGymId);
-    }
-    emit actionSuccess("Вы вышли из очереди");
 }
 
 void GymModelView::onGymAdminAdded(const QJsonObject &data) {

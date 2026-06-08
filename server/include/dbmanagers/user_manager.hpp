@@ -26,6 +26,8 @@ public:
 
     std::string getNameById(const std::string& user_id) const;
 
+    std::string getEmailById(const std::string& user_id) const;
+
     void addEnrollment(const std::string& user_id, const std::string& slot_id);
 
     void removeEnrollment(const std::string& user_id, const std::string& slot_id);

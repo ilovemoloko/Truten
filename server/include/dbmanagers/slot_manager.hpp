@@ -54,6 +54,8 @@ public:
 
     [[nodiscard]] std::vector<std::string> getQueueUserIds(const std::string& slot_id) const;
 
+    void resetWeekly();
+
 private:
     std::shared_ptr<Database> db;
 };

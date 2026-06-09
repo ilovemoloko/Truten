@@ -110,6 +110,7 @@ void GymModelView::init() {
     beginRequest();
     m_gymModel->fetchGyms();
     fetchHours();
+    fetchQueuedSlotsIds();
 }
 
 // returns gym's slots
@@ -123,6 +124,7 @@ void GymModelView::loadSlots(const QString &gymId) {
     beginRequest();
     m_slotModel->fetchSlots(gymId);
     fetchBookedSlotsIds();
+    fetchQueuedSlotsIds();
 }
 
 QObject *GymModelView::getDayModel(int day) {
@@ -328,12 +330,15 @@ void GymModelView::onQueueJoined(const QJsonObject &data) {
     } else {
         emit actionSuccess("Вы встали в очередь!");
     }
+    fetchQueuedSlotsIds();
+    fetchBookedSlotsIds();
     loadSlots(m_selectedGymId);
 }
 
 void GymModelView::onQueueLeft(const QJsonObject &data) {
     endRequest();
     emit actionSuccess("Вы вышли из очереди!");
+    fetchQueuedSlotsIds();
     loadSlots(m_selectedGymId);
 }
 

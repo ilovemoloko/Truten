@@ -1,8 +1,10 @@
 #include "database.hpp"
 #include "auth_manager.hpp"
 
-bool AuthManager::emailExists(const std::string &email) const {
-    const auto res = db->execute("SELECT 1 FROM users WHERE email = $1", email);
+bool AuthManager::emailExists(const std::string &email, bool for_update) const {
+    std::string query = "SELECT 1 FROM users WHERE email = $1";
+    if (for_update) query += " FOR UPDATE";
+    const auto res = db->execute(query, email);
     return !res.empty();
 }
 

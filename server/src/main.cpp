@@ -1,19 +1,13 @@
 #include "crow.h"
 #include "database.hpp"
+#include "jwt.hpp"
 #include "router.hpp"
+#include "scheduler.hpp"
+#include <thread>
 #include <cstdlib>
 
 int main() {
-    // "../.env" because of cmake-build-debug
     Database::loadEnv("../.env");
-
-    // NOTE: you need .env LOCAL file in format like this
-    // DB_HOST=localhost
-    // DB_PORT=5432
-    // DB_NAME=db_name
-    // DB_USER=some_user
-    // DB_PASS=pass
-    // put .env next to CMakeList.txt
 
     const char* host = std::getenv("DB_HOST");
     const char* port = std::getenv("DB_PORT");
@@ -31,8 +25,15 @@ int main() {
     std::cerr << "Connecting to DB on " << (host ? host : "localhost") << "...\n";
 
     auto db = std::make_shared<Database>(connection_string);
-    crow::SimpleApp app;
+
+    std::thread scheduler_thread([db] { Scheduler::runWeeklyReset(db); });
+    std::thread notifier_thread([db] { Scheduler::runNotifications(db); });
+
+    crow::App<AuthMiddleware> app;
     ServerMain router(app, db);
     router.run();
+
+    scheduler_thread.join();
+    notifier_thread.join();
     return 0;
 }

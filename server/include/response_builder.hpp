@@ -3,6 +3,7 @@
 #include "crow.h"
 #include "request_handler.hpp"
 #include "status_codes.hpp"
+#include <optional>
 
 struct ResponseBuilder {
 public:

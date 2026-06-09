@@ -22,7 +22,9 @@ public:
 
     [[nodiscard]] int getUnbanTime(const std::string &id) const;
 
-    std::vector<std::string> getUserEnrollments(const std::string& user_id, bool for_update = false) const;
+    void lockUser(const std::string& user_id) const;
+
+    std::vector<std::string> getUserEnrollments(const std::string& user_id) const;
 
     std::string getNameById(const std::string& user_id) const;
 
@@ -36,7 +38,7 @@ public:
 
     void removeQueuedSlot(const std::string& user_id, const std::string& slot_id);
 
-    [[nodiscard]] std::vector<std::string> getUserQueuedSlots(const std::string& user_id, bool for_update = false) const;
+    [[nodiscard]] std::vector<std::string> getUserQueuedSlots(const std::string& user_id) const;
 
     void deleteUser(const std::string &id);
 

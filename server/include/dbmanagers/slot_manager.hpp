@@ -44,13 +44,15 @@ public:
 
     std::string getNameById(const std::string& user_id) const;
 
-    [[nodiscard]] bool isAtCapacity(const std::string& slot_id, bool for_update = false) const;
+    void lockSlot(const std::string& slot_id) const;
+
+    [[nodiscard]] bool isAtCapacity(const std::string& slot_id) const;
 
     void addToQueue(const std::string& user_id, const std::string& slot_id);
 
     void removeFromQueue(const std::string& user_id, const std::string& slot_id);
 
-    [[nodiscard]] std::string getFirstInQueue(const std::string& slot_id, bool for_update = false) const;
+    [[nodiscard]] std::string getFirstInQueue(const std::string& slot_id) const;
 
     [[nodiscard]] std::vector<std::string> getQueueUserIds(const std::string& slot_id) const;
 

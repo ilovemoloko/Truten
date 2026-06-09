@@ -31,7 +31,7 @@ bool UserManager::userExists(const std::string &id, bool for_update) const {
 int UserManager::getUnbanTime(const std::string &id) const {
     const auto resp = db->execute("SELECT unban_time FROM users WHERE ID = $1", id);
     if (resp.empty() || resp[0][0].is_null()) return 0;
-    return 0;
+    return resp[0][0].as<int>();
 
 }
 
@@ -44,10 +44,12 @@ void UserManager::deleteUser(const std::string &id) {
     db->execute("DELETE FROM users WHERE id = $1", id);
 }
 
-std::vector<std::string> UserManager::getUserEnrollments(const std::string& user_id, bool for_update) const {
-    std::string query = "SELECT enrolled_slots FROM users WHERE ID = $1";
-    if (for_update) query += " FOR UPDATE";
-    const auto resp = db->execute(query, user_id)[0][0];
+void UserManager::lockUser(const std::string& user_id) const {
+    db->execute("SELECT 1 FROM users WHERE id = $1 FOR UPDATE", user_id);
+}
+
+std::vector<std::string> UserManager::getUserEnrollments(const std::string& user_id) const {
+    const auto resp = db->execute("SELECT enrolled_slots FROM users WHERE ID = $1", user_id)[0][0];
     if (resp.is_null()) return {};
     auto enrolled_array = resp.as_array();
     std::vector<std::string> to_return;
@@ -88,10 +90,8 @@ void UserManager::removeQueuedSlot(const std::string &user_id, const std::string
     db->execute("UPDATE users SET queued_slots = array_remove(queued_slots, $1) WHERE ID = $2", slot_id, user_id);
 }
 
-std::vector<std::string> UserManager::getUserQueuedSlots(const std::string &user_id, bool for_update) const {
-    std::string query = "SELECT queued_slots FROM users WHERE ID = $1";
-    if (for_update) query += " FOR UPDATE";
-    const auto resp = db->execute(query, user_id)[0][0];
+std::vector<std::string> UserManager::getUserQueuedSlots(const std::string &user_id) const {
+    const auto resp = db->execute("SELECT queued_slots FROM users WHERE ID = $1", user_id)[0][0];
     if (resp.is_null()) return {};
     auto arr = resp.as_array();
     std::vector<std::string> to_return;

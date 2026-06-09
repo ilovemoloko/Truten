@@ -61,11 +61,15 @@ crow::response SlotRoutes::addUserEntry(const crow::request& req, const std::str
     const auto user_id = std::string(request["userId"]);
 
     return db->executeInTransaction([&]() {
-        const auto user_enrollments = db_user.getUserEnrollments(user_id, true);
+        db_slots.lockSlot(slot_id);
+        const bool is_full = db_slots.isAtCapacity(slot_id);
+
+        db_user.lockUser(user_id);
+        const auto user_enrollments = db_user.getUserEnrollments(user_id);
         if (std::find(user_enrollments.begin(), user_enrollments.end(), slot_id) != user_enrollments.end()) {
             return ResponseBuilder(RESPONSE_CODE::INVALID, "Already enrolled").build();
         }
-        if (db_slots.isAtCapacity(slot_id, true)) {
+        if (is_full) {
             return ResponseBuilder(RESPONSE_CODE::INVALID, "Slot is full. Join the queue instead.").build();
         }
         db_slots.addEntry(user_id, slot_id);
@@ -83,11 +87,17 @@ crow::response SlotRoutes::deleteUserEntry(const crow::request& req, const std::
     const auto user_id = std::string(request["userId"]);
 
     return db->executeInTransaction([&]() {
+        // block rows in order slot, user (to avoid deadlock)
+        db_slots.lockSlot(slot_id);
+        db_user.lockUser(user_id);
+
         db_slots.removeEntry(user_id, slot_id);
         db_user.removeEnrollment(user_id, slot_id);
 
-        const std::string next = db_slots.getFirstInQueue(slot_id, true);
+        const std::string next = db_slots.getFirstInQueue(slot_id);
         if (!next.empty()) {
+            db_user.lockUser(next);
+
             db_slots.removeFromQueue(next, slot_id);
             db_user.removeQueuedSlot(next, slot_id);
             db_slots.addEntry(next, slot_id);

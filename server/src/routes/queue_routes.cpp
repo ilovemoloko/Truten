@@ -12,17 +12,22 @@ crow::response QueueRoutes::joinQueue(const crow::request& req, const std::strin
     const auto user_id = std::string(request["userId"]);
 
     return db_->executeInTransaction([&]() {
-        const auto enrollments = db_user.getUserEnrollments(user_id, true);
+        // block rows in order slot, user (to avoid deadlock)
+        db_slots.lockSlot(slot_id);
+        const bool is_full = db_slots.isAtCapacity(slot_id);
+
+        db_user.lockUser(user_id);
+        const auto enrollments = db_user.getUserEnrollments(user_id);
         if (std::find(enrollments.begin(), enrollments.end(), slot_id) != enrollments.end()) {
             return ResponseBuilder(RESPONSE_CODE::INVALID, "Already enrolled").build();
         }
 
-        const auto queued = db_user.getUserQueuedSlots(user_id, true);
+        const auto queued = db_user.getUserQueuedSlots(user_id);
         if (std::find(queued.begin(), queued.end(), slot_id) != queued.end()) {
             return ResponseBuilder(RESPONSE_CODE::INVALID, "Already in queue").build();
         }
 
-        if (!db_slots.isAtCapacity(slot_id, true)) {
+        if (!is_full) {
             db_slots.addEntry(user_id, slot_id);
             db_user.addEnrollment(user_id, slot_id);
             ResponseBuilder resp;
@@ -48,7 +53,10 @@ crow::response QueueRoutes::leaveQueue(const crow::request& req, const std::stri
     const auto user_id = std::string(request["userId"]);
 
     return db_->executeInTransaction([&]() {
-        const auto queued = db_user.getUserQueuedSlots(user_id, true);
+        db_slots.lockSlot(slot_id);
+        db_user.lockUser(user_id);
+
+        const auto queued = db_user.getUserQueuedSlots(user_id);
         if (std::find(queued.begin(), queued.end(), slot_id) == queued.end()) {
             return ResponseBuilder(RESPONSE_CODE::NOT_FOUND, "Not in queue").build();
         }

@@ -51,6 +51,10 @@ std::string SlotManager::getNameById(const std::string &user_id) const {
     return res.as<std::string>();
 }
 
+void SlotManager::lockSlot(const std::string& slot_id) const {
+    db->execute("SELECT 1 FROM slots WHERE id = $1 FOR UPDATE", slot_id);
+}
+
 
 std::vector<crow::json::wvalue> SlotManager::loadUserList(const pqxx::field& field) const {
     std::vector<crow::json::wvalue> participants;
@@ -85,17 +89,17 @@ std::vector<crow::json::wvalue> SlotManager::getGymSlots(const std::string &gym_
 crow::json::wvalue SlotManager::getSlotInfoJSON(const std::string& slot_id, bool for_update) const {
     auto res = getSlotInfo(slot_id, for_update)[0];
     crow::json::wvalue to_return;
-    auto participants = loadUserList(res[4]);
-    auto queue_users = loadUserList(res[8]);
-    //kill me
-    to_return["slotId"] = res[0].as<std::string>();
-    to_return["gymId"] = res[1].as<std::string>();
-    to_return["gymName"] = res[2].as<std::string>();
-    to_return["capacity"] = res[3].as<short>();
+    auto participants = loadUserList(res["enrolled"]);
+    auto queue_users = loadUserList(res["queue"]);
+    
+    to_return["slotId"] = res["id"].as<std::string>();
+    to_return["gymId"] = res["section_id"].as<std::string>();
+    to_return["gymName"] = res["section_name"].as<std::string>();
+    to_return["capacity"] = res["capacity"].as<short>();
     to_return["participantsCount"] = static_cast<short>(participants.size());
     to_return["participants"] = std::move(participants);
-    to_return["startTime"] = res[5].as<std::string>();
-    to_return["endTime"] = res[6].as<std::string>();
+    to_return["startTime"] = res["start_time"].as<std::string>();
+    to_return["endTime"] = res["end_time"].as<std::string>();
     to_return["queueCount"] = static_cast<short>(queue_users.size());
     to_return["queue"] = std::move(queue_users);
     return to_return;
@@ -126,29 +130,15 @@ void SlotManager::createSlot(const std::string &gym_id, std::string &time_begin,
 }
 
 void SlotManager::deleteSlot(const std::string &slot_id) {
-    auto slot_info = getSlotInfo(slot_id, true)[0];
-    auto participants = loadUserList(slot_info[4]);
-    for (auto &part : participants) {
-        std::string user_id = part["userId"].dump();
-        //sadly .dump() leaves the string in a weird format like ""a""
-        user_id.pop_back();
-        user_id.erase(user_id.begin());
-        db->execute("UPDATE users SET enrolled_slots = array_remove(enrolled_slots, $1) WHERE ID = $2", slot_id, user_id);
-    }
-    auto queue_users = loadUserList(slot_info[8]);
-    for (auto &part : queue_users) {
-        std::string user_id = part["userId"].dump();
-        user_id.pop_back();
-        user_id.erase(user_id.begin());
-        db->execute("UPDATE users SET queued_slots = array_remove(queued_slots, $1) WHERE ID = $2", slot_id, user_id);
-    }
+    db->execute("UPDATE users SET enrolled_slots = array_remove(enrolled_slots, $1) "
+                "WHERE id = ANY(COALESCE((SELECT enrolled FROM slots WHERE id = $1 FOR UPDATE), '{}')::uuid[])", slot_id);
+    db->execute("UPDATE users SET queued_slots = array_remove(queued_slots, $1) "
+                "WHERE id = ANY(COALESCE((SELECT queue FROM slots WHERE id = $1 FOR UPDATE), '{}')::uuid[])", slot_id);
     db->execute("DELETE FROM slots WHERE id = $1", slot_id);
 }
 
-bool SlotManager::isAtCapacity(const std::string &slot_id, bool for_update) const {
-    std::string query = "SELECT capacity, COALESCE(array_length(enrolled, 1), 0) FROM slots WHERE id = $1";
-    if (for_update) query += " FOR UPDATE";
-    auto res = db->execute(query, slot_id)[0];
+bool SlotManager::isAtCapacity(const std::string &slot_id) const {
+    auto res = db->execute("SELECT capacity, COALESCE(array_length(enrolled, 1), 0) FROM slots WHERE id = $1", slot_id)[0];
     return res[1].as<int>() >= res[0].as<int>();
 }
 
@@ -160,10 +150,8 @@ void SlotManager::removeFromQueue(const std::string &user_id, const std::string 
     db->execute("UPDATE slots SET queue = array_remove(queue, $1) WHERE id = $2", user_id, slot_id);
 }
 
-std::string SlotManager::getFirstInQueue(const std::string &slot_id, bool for_update) const {
-    std::string query = "SELECT queue[1] FROM slots WHERE id = $1";
-    if (for_update) query += " FOR UPDATE";
-    auto res = db->execute(query, slot_id)[0][0];
+std::string SlotManager::getFirstInQueue(const std::string &slot_id) const {
+    auto res = db->execute("SELECT queue[1] FROM slots WHERE id = $1", slot_id)[0][0];
     if (res.is_null()) return "";
     return res.as<std::string>();
 }

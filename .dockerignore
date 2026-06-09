@@ -1,0 +1,8 @@
+.git
+.idea
+**/build/
+**/build_out/
+**/cmake-build-*/
+.env
+*.user
+.DS_Store

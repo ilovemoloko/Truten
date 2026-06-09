@@ -15,8 +15,6 @@ find_package(Qt6 COMPONENTS
         Qml
         REQUIRED)
 
-qt_policy(SET QTP0004 NEW)
-
 
 add_executable(appclient
         src/main.cpp

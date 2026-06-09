@@ -2,6 +2,8 @@
 #define BASEAPIMODEL_H
 
 #include <QJsonObject>
+#include <QJsonDocument>
+#include <QJsonParseError>
 #include <QNetworkAccessManager>
 #include <QObject>
 #include "enumToken.h"

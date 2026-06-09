@@ -1,12 +1,20 @@
 #!/bin/bash
 set -e
 
-cd "$(dirname "$0")"
+echo "<=> Установка зависимостей..."
+sudo apt update -qq
+sudo apt install -y \
+    git cmake g++ \
+    qt6-base-dev qt6-declarative-dev \
+    qml6-module-qtquick qml6-module-qtquick-controls \
+    qml6-module-qtquick-layouts qml6-module-qtquick-window \
+    qml6-module-qtqml-workerscript qml6-module-qtquick-templates \
+    qml6-module-qtquick-nativestyle qml6-module-qtquick-shapes
 
+echo "<=> Сборка клиента..."
 mkdir -p client/build
-cd client/build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu/cmake/Qt6 > /dev/null
-cmake --build . --parallel $(nproc)
-cd ../..
+cmake -S client -B client/build -DCMAKE_BUILD_TYPE=Release
+cmake --build client/build --parallel $(nproc)
 
+echo "<=> Запуск..."
 ./client/build/appclient

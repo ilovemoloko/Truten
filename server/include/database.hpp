@@ -38,6 +38,7 @@ public:
     auto executeInTransaction(Func&& f);
 
     static void loadEnv(const std::string& path = ".env");
+    static void printEnvStatus();
 
     static thread_local DBTransaction* current_txn;
 private:

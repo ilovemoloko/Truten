@@ -8,21 +8,27 @@
 
 int main() {
     Database::loadEnv("../.env");
+    Database::printEnvStatus();
 
-    const char* host = std::getenv("DB_HOST");
-    const char* port = std::getenv("DB_PORT");
-    const char* dbname = std::getenv("DB_NAME");
-    const char* user = std::getenv("DB_USER");
-    const char* pass = std::getenv("DB_PASS");
+    auto get_env_safe = [](const char* key) -> std::string {
+        const char* val = std::getenv(key);
+        return val ? val : "";
+    };
+
+    std::string host = get_env_safe("DB_HOST");
+    std::string port = get_env_safe("DB_PORT");
+    std::string dbname = get_env_safe("DB_NAME");
+    std::string user = get_env_safe("DB_USER");
+    std::string pass = get_env_safe("DB_PASS");
 
     const std::string connection_string =
-        "host=" + std::string(host ? host : "localhost") + " " +
-        "port=" + std::string(port ? port : "5432") + " " +
-        "dbname=" + std::string(dbname ? dbname : "testdb") + " " +
-        "user=" + std::string(user ? user : "postgres") + " " +
-        "password=" + std::string(pass ? pass : "");
+        "host=" + (host.empty() ? "localhost" : host) + " " +
+        "port=" + (port.empty() ? "5432" : port) + " " +
+        "dbname=" + (dbname.empty() ? "testdb" : dbname) + " " +
+        "user=" + (user.empty() ? "postgres" : user) + " " +
+        "password=" + pass;
 
-    std::cerr << "Connecting to DB on " << (host ? host : "localhost") << "...\n";
+    std::cerr << "Connecting to DB...\n";
 
     auto db = std::make_shared<Database>(connection_string);
 

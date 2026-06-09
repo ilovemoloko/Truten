@@ -22,6 +22,37 @@ void Database::loadEnv(const std::string &path) {
     }
 }
 
+void Database::printEnvStatus() {
+    auto get_env_safe = [](const char* key) -> std::string {
+        const char* val = std::getenv(key);
+        return val ? val : "";
+    };
+
+    auto print_status = [&](const char* key, bool is_secret = false) {
+        std::string val = get_env_safe(key);
+        if (val.empty()) {
+            std::cerr << "[CONF] " << key << " is NOT SET\n";
+        } else if (is_secret) {
+            std::cerr << "[CONF] " << key << " is SET (length: " << val.length() << ")\n";
+        } else {
+            std::cerr << "[CONF] " << key << " = " << val << "\n";
+        }
+    };
+
+    std::cerr << "--- Configuration Check ---\n";
+    print_status("DB_HOST");
+    print_status("DB_PORT");
+    print_status("DB_NAME");
+    print_status("DB_USER");
+    print_status("DB_PASS", true);
+    print_status("JWT_SECRET", true);
+    print_status("SMTP_HOST");
+    print_status("SMTP_PORT");
+    print_status("SMTP_USER");
+    print_status("SMTP_PASS", true);
+    std::cerr << "---------------------------\n";
+}
+
 std::shared_ptr<pqxx::connection> Database::acquireConnection() {
     std::unique_lock l(m_mutex);
     m_cond_var.wait(l, [this] { return !m_conn_pool.empty(); });
@@ -62,7 +93,8 @@ void Database::init() {
                 "start_time TIMESTAMP NOT NULL,"
                 "end_time TIMESTAMP NOT NULL,"
                 "is_cancelled BOOLEAN DEFAULT FALSE,"
-                "queue UUID[])");
+                "queue UUID[],"
+                "notified BOOLEAN DEFAULT FALSE)");
 
         execute("CREATE TABLE IF NOT EXISTS gyms ("
                 "ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
@@ -71,6 +103,7 @@ void Database::init() {
 
         execute("ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS queued_slots UUID[]");
         execute("ALTER TABLE IF EXISTS slots ADD COLUMN IF NOT EXISTS queue UUID[]");
+        execute("ALTER TABLE IF EXISTS slots ADD COLUMN IF NOT EXISTS notified BOOLEAN DEFAULT FALSE");
 
         // executeInTransaction() is template function. Return smth to avoid 'incomplete type'
         return 1;

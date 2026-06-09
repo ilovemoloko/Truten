@@ -1,4 +1,73 @@
 #include "auth_routes.hpp"
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+#include <openssl/crypto.h>
+#include <iomanip>
+#include <sstream>
+
+static std::string toHex(const unsigned char* data, size_t length) {
+    std::stringstream ss;
+    for(size_t i = 0; i < length; ++i)
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)data[i];
+    return ss.str();
+}
+
+static int hexCharToInt(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+static bool fromHex(const std::string& hex, unsigned char* out, size_t out_len) {
+    if (hex.length() != out_len * 2) return false;
+    for (size_t i = 0; i < out_len; ++i) {
+        int hi = hexCharToInt(hex[i * 2]);
+        int lo = hexCharToInt(hex[i * 2 + 1]);
+        if (hi < 0 || lo < 0) return false;
+        out[i] = (hi << 4) | lo;
+    }
+    return true;
+}
+
+static std::string hashPassword(const std::string& password) {
+    unsigned char salt[16];
+    RAND_bytes(salt, sizeof(salt));
+    
+    unsigned char hash[32];
+    PKCS5_PBKDF2_HMAC(password.c_str(), password.length(),
+                      salt, sizeof(salt),
+                      10000,
+                      EVP_sha256(),
+                      sizeof(hash), hash);
+                      
+    return toHex(salt, sizeof(salt)) + ":" + toHex(hash, sizeof(hash));
+}
+
+static bool verifyPassword(const std::string& password, const std::string& stored) {
+    auto colon_pos = stored.find(':');
+    if (colon_pos == std::string::npos) return false;
+    
+    std::string salt_hex = stored.substr(0, colon_pos);
+    std::string hash_hex = stored.substr(colon_pos + 1);
+    
+    unsigned char salt[16];
+    unsigned char expected_hash[32];
+    
+    if (!fromHex(salt_hex, salt, sizeof(salt)) || 
+        !fromHex(hash_hex, expected_hash, sizeof(expected_hash))) {
+        return false;
+    }
+    
+    unsigned char hash[32];
+    PKCS5_PBKDF2_HMAC(password.c_str(), password.length(),
+                      salt, sizeof(salt),
+                      10000,
+                      EVP_sha256(),
+                      sizeof(hash), hash);
+                      
+    return CRYPTO_memcmp(hash, expected_hash, sizeof(hash)) == 0;
+}
 
 AuthRoutes::AuthRoutes(const std::shared_ptr<Database>& db) : db_(db), db_auth(db), db_user(db) {
 }
@@ -19,7 +88,7 @@ crow::response AuthRoutes::createAccount(const crow::request &req) {
         if (db_auth.emailExists(email, true)) {
             return ResponseBuilder(RESPONSE_CODE::INVALID).build();
         }
-        db_auth.createUser(email, password, name);
+        db_auth.createUser(email, hashPassword(password), name);
         const std::string user_id = db_auth.getUserIdByEmail(email);
         const std::string access_token = make_access_token(user_id, false);
         const std::string refresh_token = make_refresh_token(user_id);
@@ -45,7 +114,7 @@ crow::response AuthRoutes::login(const crow::request &req) const {
     return db_->executeInTransaction([&]() {
         const std::string real_password = db_auth.getPasswordByEmail(email);
         const std::string user_id = db_auth.getUserIdByEmail(email);
-        if (password != real_password) {
+        if (!verifyPassword(password, real_password)) {
             return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
         }
         const bool is_admin = db_user.isAdmin(user_id);

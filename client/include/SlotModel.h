@@ -22,6 +22,9 @@ public:
         int capacity
     );
     void getBookedSlotsIds(const QString &userId = getUserId());
+    void joinQueue(const QString &slotId);
+    void leaveQueue(const QString &slotId);
+    void getQueuedSlotsIds(const QString &userId = getUserId());
 
 signals:
     void slotsLoaded(const QJsonObject &data);
@@ -30,6 +33,9 @@ signals:
     void slotCreated(const QJsonObject &data);
     void slotRemoved(const QJsonObject &data);
     void bookedSlotsIdsFinished(const QJsonObject &data);
+    void queueJoinFinished(const QJsonObject &data);
+    void queueLeaveFinished(const QJsonObject &data);
+    void queuedSlotsIdsFinished(const QJsonObject &data);
 };
 
 #endif  // SLOTMODEL_H

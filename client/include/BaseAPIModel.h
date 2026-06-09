@@ -38,6 +38,14 @@ public:
         return m_isAdmin;
     }
 
+    static void setAccessToken(const QString &token) {
+        m_accessToken = token;
+    }
+
+    static void setRefreshToken(const QString &token) {
+        m_refreshToken = token;
+    }
+
     QNetworkReply *sendPostRequest(
         const QString &path,
         const QJsonObject &json,

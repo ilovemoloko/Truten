@@ -49,6 +49,13 @@ GymModelView::GymModelView(
         m_slotModel, &SlotModel::bookedSlotsIdsFinished, this,
         &GymModelView::onBookedSlotsIdsFinished
     );
+    connect(
+        m_gymModel, &GymModel::gymAdminAdded, this,
+        &GymModelView::onGymAdminAdded
+    );
+    connect(m_slotModel, &SlotModel::queueJoinFinished, this, &GymModelView::onQueueJoined);
+    connect(m_slotModel, &SlotModel::queueLeaveFinished, this, &GymModelView::onQueueLeft);
+    connect(m_slotModel, &SlotModel::queuedSlotsIdsFinished, this, &GymModelView::onQueuedSlotsIdsFinished);
 
     m_slotsListModel = new SlotsListModel(this);
 
@@ -84,6 +91,15 @@ void GymModelView::endRequest() {
 void GymModelView::setError(const QString &error) {
     m_errorMessage = error;
     emit errorMessageChanged();
+}
+
+void GymModelView::beginActionRequest() {
+    m_pendingActionRequests++;
+    beginRequest();
+}
+
+void GymModelView::endActionRequest() {
+    m_pendingActionRequests = qMax(0, m_pendingActionRequests - 1);
     endRequest();
 }
 
@@ -91,12 +107,10 @@ void GymModelView::init() {
     m_errorMessage.clear();
     emit errorMessageChanged();
 
-    // beginRequest();
-    // m_gymModel->fetchUserStats(); // stats for mvp
-
     beginRequest();
     m_gymModel->fetchGyms();
     fetchHours();
+    fetchQueuedSlotsIds();
 }
 
 // returns gym's slots
@@ -109,6 +123,8 @@ void GymModelView::selectGym(const QString &gymId) {
 void GymModelView::loadSlots(const QString &gymId) {
     beginRequest();
     m_slotModel->fetchSlots(gymId);
+    fetchBookedSlotsIds();
+    fetchQueuedSlotsIds();
 }
 
 QObject *GymModelView::getDayModel(int day) {
@@ -131,18 +147,42 @@ void GymModelView::bookSlot(const QString &slotId) {
         return;
     }
 
-    beginRequest();
+    beginActionRequest();
     m_slotModel->bookSlot(slotId);
 }
 
 void GymModelView::cancelBooking(const QString &slotId) {
-    beginRequest();
+    beginActionRequest();
     m_slotModel->cancelBooking(slotId);
 }
 
 void GymModelView::fetchBookedSlotsIds() {
     beginRequest();
     m_slotModel->getBookedSlotsIds();
+}
+
+void GymModelView::fetchQueuedSlotsIds() {
+    beginRequest();
+    m_slotModel->getQueuedSlotsIds();
+}
+
+void GymModelView::joinQueue(const QString &slotId) {
+    if (m_QueuedSlotIds.contains(slotId)) {
+        emit actionError("Вы уже в очереди на этот слот!");
+        return;
+    }
+    beginRequest();
+    m_slotModel->joinQueue(slotId);
+}
+
+void GymModelView::leaveQueue(const QString &slotId) {
+    beginRequest();
+    m_slotModel->leaveQueue(slotId);
+}
+
+bool GymModelView::isSlotQueued(const QString &slotId) {
+    if (slotId.isEmpty()) return false;
+    return m_QueuedSlotIds.contains(slotId);
 }
 
 void GymModelView::createSlot(
@@ -154,22 +194,22 @@ void GymModelView::createSlot(
         emit actionError("Не выбран зал для создания слота");
         return;
     }
-    beginRequest();
+    beginActionRequest();
     m_slotModel->createSlot(startTime, endTime, m_selectedGymId, capacity);
 }
 
 void GymModelView::removeSlot(const QString &slotId) {
-    beginRequest();
+    beginActionRequest();
     m_slotModel->removeSlot(slotId);
 }
 
 void GymModelView::createGym(const QString &name) {
-    beginRequest();
+    beginActionRequest();
     m_gymModel->createGym(name);
 }
 
 void GymModelView::addHours(int hours, const QString &userId) {
-    beginRequest();
+    beginActionRequest();
     m_gymModel->addHours(hours, userId);
 };
 
@@ -179,19 +219,19 @@ void GymModelView::fetchHours() {
 };
 
 void GymModelView::onSlotCreated(const QJsonObject &data) {
-    endRequest();
+    endActionRequest();
     emit actionSuccess("Слот успешно создан!");
     loadSlots(selectedGymId());
 }
 
 void GymModelView::onGymCreated(const QJsonObject &data) {
-    endRequest();
+    endActionRequest();
     emit actionSuccess("Зал успешно создан!");
     init();
 }
 
 void GymModelView::onSlotRemoved(const QJsonObject &data) {
-    endRequest();
+    endActionRequest();
     emit actionSuccess("Слот успешно удален!");
     loadSlots(selectedGymId());
 }
@@ -219,6 +259,8 @@ void GymModelView::onSlotsLoaded(const QJsonObject &data) {
         item.capacity = slotObj["capacity"].toInt();
         item.participantsCount = slotObj["participantsCount"].toInt();
         item.participants = slotObj["participants"].toArray().toVariantList();
+        item.queueCount = slotObj["queueCount"].toInt();
+        item.queue = slotObj["queue"].toArray().toVariantList();
 
         item.startTime =
             QDateTime::fromString(slotObj["startTime"].toString(), Qt::ISODate);
@@ -231,7 +273,7 @@ void GymModelView::onSlotsLoaded(const QJsonObject &data) {
 }
 
 void GymModelView::onBookingFinished(const QJsonObject &data) {
-    endRequest();
+    endActionRequest();
     fetchBookedSlotsIds();
     loadSlots(m_selectedGymId);
     emit bookedSlotsChanged();
@@ -239,10 +281,29 @@ void GymModelView::onBookingFinished(const QJsonObject &data) {
 
 void GymModelView::onStatsLoaded(const QJsonObject &data) {
     endRequest();
-    m_userName = data["name"].toString();
-    m_hoursCount = data["visit_count"].toInt();
-    m_hoursNeeded = data["visits_needed"].toInt(24);
-    emit userInfoChanged();
+    m_gymStatsList.clear();
+
+    QJsonObject gymsObj = data["gyms"].toObject();
+    for (auto it = gymsObj.begin(); it != gymsObj.end(); ++it) {
+        QString gymId = it.key();
+        int hours = it.value().toInt();
+
+        QString gymName = gymId;
+        for (const QVariant &gymVar : m_gyms) {
+            QVariantMap gym = gymVar.toMap();
+            if (gym["id"].toString() == gymId) {
+                gymName = gym["name"].toString();
+                break;
+            }
+        }
+
+        QVariantMap entry;
+        entry["name"] = gymName;
+        entry["hours"] = hours;
+        m_gymStatsList.append(entry);
+    }
+
+    emit gymStatsChanged();
 }
 
 void GymModelView::onBookedSlotsIdsFinished(const QJsonObject &data) {
@@ -257,9 +318,39 @@ void GymModelView::onBookedSlotsIdsFinished(const QJsonObject &data) {
 };
 
 void GymModelView::onHoursAdded(const QJsonObject &data) {
-    endRequest();
+    endActionRequest();
     emit actionSuccess("Часы успешно зачислены!");
 };
+
+void GymModelView::onQueueJoined(const QJsonObject &data) {
+    endRequest();
+    if (data["enrolled"].toBool(false)) {
+        emit actionSuccess("Место освободилось — вы записаны!");
+        fetchBookedSlotsIds();
+    } else {
+        emit actionSuccess("Вы встали в очередь!");
+    }
+    fetchQueuedSlotsIds();
+    fetchBookedSlotsIds();
+    loadSlots(m_selectedGymId);
+}
+
+void GymModelView::onQueueLeft(const QJsonObject &data) {
+    endRequest();
+    emit actionSuccess("Вы вышли из очереди!");
+    fetchQueuedSlotsIds();
+    loadSlots(m_selectedGymId);
+}
+
+void GymModelView::onQueuedSlotsIdsFinished(const QJsonObject &data) {
+    endRequest();
+    m_QueuedSlotIds.clear();
+    QJsonArray arr = data["queuedSlots"].toArray();
+    for (const QJsonValue &val : arr) {
+        m_QueuedSlotIds.insert(val.toString());
+    }
+    emit bookedSlotsChanged();
+}
 
 void GymModelView::onHoursLoaded(const QJsonObject &data) {
     endRequest();
@@ -267,7 +358,44 @@ void GymModelView::onHoursLoaded(const QJsonObject &data) {
     emit userInfoChanged();
 };
 
+void GymModelView::addGymAdmin(const QString &userId) {
+    if (m_selectedGymId.isEmpty()) {
+        emit actionError("Не выбран зал");
+        return;
+    }
+    beginActionRequest();
+    m_gymModel->addGymAdmin(m_selectedGymId, userId);
+}
+
+void GymModelView::fetchStats() {
+    beginRequest();
+    m_gymModel->fetchUserStats();
+}
+
+void GymModelView::clearUserState() {
+    m_BookedSlotIds.clear();
+    m_QueuedSlotIds.clear();
+    m_gyms.clear();
+    m_gymStatsList.clear();
+    m_slotsListModel->setSlots({});
+    m_selectedGymId.clear();
+    emit gymsChanged();
+    emit bookedSlotsChanged();
+    emit queuedSlotsChanged();
+    emit gymStatsChanged();
+}
+
+void GymModelView::onGymAdminAdded(const QJsonObject &data) {
+    endActionRequest();
+    emit actionSuccess("Администратор успешно добавлен!");
+}
+
 void GymModelView::onApiError(const QString &message) {
-    endRequest();
-    setError(message);
+    if (m_pendingActionRequests > 0) {
+        endActionRequest();
+        emit actionError(message);
+    } else {
+        endRequest();
+        setError(message);
+    }
 }

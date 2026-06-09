@@ -26,6 +26,7 @@ Window {
     Connections {
         target: authMV
         function onAuthSuccess() {
+            isRegisterMode = false
             mainStack.replace("GymView.qml")
         }
     }

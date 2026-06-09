@@ -23,6 +23,7 @@ class GymModelView : public QObject {
     Q_PROPERTY(int hoursCount READ hoursCount NOTIFY userInfoChanged)
     Q_PROPERTY(int hoursNeeded READ hoursNeeded NOTIFY userInfoChanged)
     Q_PROPERTY(bool isAdmin READ isAdmin NOTIFY userInfoChanged)
+    Q_PROPERTY(QVariantList gymStatsList READ gymStatsList NOTIFY gymStatsChanged)
 
 public:
     explicit GymModelView(
@@ -67,6 +68,10 @@ public:
         return m_gymModel->isAdmin();
     }
 
+    QVariantList gymStatsList() const {
+        return m_gymStatsList;
+    }
+
     Q_INVOKABLE void init();
     Q_INVOKABLE void selectGym(const QString &gymId);
     Q_INVOKABLE void bookSlot(const QString &slotId);
@@ -84,6 +89,13 @@ public:
     Q_INVOKABLE void fetchBookedSlotsIds();
     Q_INVOKABLE void addHours(int hours, const QString &userId);
     Q_INVOKABLE void fetchHours();
+    Q_INVOKABLE void joinQueue(const QString &slotId);
+    Q_INVOKABLE void leaveQueue(const QString &slotId);
+    Q_INVOKABLE bool isSlotQueued(const QString &slotId);
+    Q_INVOKABLE void fetchQueuedSlotsIds();
+    Q_INVOKABLE void addGymAdmin(const QString &userId);
+    Q_INVOKABLE void fetchStats();
+    Q_INVOKABLE void clearUserState();
 
 signals:
     void isLoadingChanged();
@@ -95,6 +107,8 @@ signals:
     void actionSuccess(const QString &message);
     void actionError(const QString &message);
     void bookedSlotsChanged();
+    void queuedSlotsChanged();
+    void gymStatsChanged();
 
 private slots:
     void onGymsLoaded(const QJsonObject &data);
@@ -108,6 +122,10 @@ private slots:
     void onBookedSlotsIdsFinished(const QJsonObject &data);
     void onHoursLoaded(const QJsonObject &data);
     void onHoursAdded(const QJsonObject &data);
+    void onQueueJoined(const QJsonObject &data);
+    void onQueueLeft(const QJsonObject &data);
+    void onQueuedSlotsIdsFinished(const QJsonObject &data);
+    void onGymAdminAdded(const QJsonObject &data);
 
 private:
     GymModel *m_gymModel;
@@ -121,17 +139,22 @@ private:
     QList<QSortFilterProxyModel *> m_dayProxies;
     QString m_selectedGymId;
     QSet<QString> m_BookedSlotIds;
+    QSet<QString> m_QueuedSlotIds;
     QMap<int, QString> m_bookingsByDay;
+    QVariantList m_gymStatsList;
     QString m_userName;
 
     int m_hoursCount = 0;
     int m_hoursNeeded = 24;
     int m_pendingRequests = 0;
+    int m_pendingActionRequests = 0;
 
     void setLoading(bool loading);
     void setError(const QString &error);
     void beginRequest();
     void endRequest();
+    void beginActionRequest();
+    void endActionRequest();
 };
 
 #endif  // GYMMODELVIEW_H

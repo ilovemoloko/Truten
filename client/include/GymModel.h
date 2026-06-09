@@ -20,6 +20,7 @@ public:
     void createGym(const QString &name);
     void fetchUserGainedHours(const QString &userId = getUserId());
     void addHours(int hours, const QString &userId = getUserId());
+    void addGymAdmin(const QString &gymId, const QString &userId);
 
 signals:
     void gymsLoaded(const QJsonObject &data);
@@ -29,6 +30,7 @@ signals:
     void gymRemoved(const QJsonObject &data);
     void hoursLoaded(const QJsonObject &data);
     void hoursAdded(const QJsonObject &data);
+    void gymAdminAdded(const QJsonObject &data);
 };
 
 #endif  // GYMMODEL_H

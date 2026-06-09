@@ -17,7 +17,7 @@ void Database::loadEnv(const std::string &path) {
         if (auto eqPos = line.find('='); eqPos != std::string::npos) {
             std::string key = line.substr(0, eqPos);
             std::string value = line.substr(eqPos + 1);
-            setenv(key.c_str(), value.c_str(), 1);
+            setenv(key.c_str(), value.c_str(), 0);
         }
     }
 }

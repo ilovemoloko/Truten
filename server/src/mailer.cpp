@@ -8,14 +8,14 @@ Mailer::Mailer(std::string host, int port, std::string user, std::string pass, s
 }
 
 bool Mailer::send(const std::string &to, const std::string &subject, const std::string &body) const {
-    setenv("SMTP_TO", to.c_str(), 1);
-    setenv("SMTP_SUBJECT", subject.c_str(), 1);
-    setenv("SMTP_BODY", body.c_str(), 1);
-    setenv("SMTP_HOST", m_host.c_str(), 1);
-    setenv("SMTP_PORT", std::to_string(m_port).c_str(), 1);
-    setenv("SMTP_USER", m_user.c_str(), 1);
-    setenv("SMTP_PASS", m_pass.c_str(), 1);
-    setenv("SMTP_FROM", m_from.c_str(), 1);
+    setenv("SMTP_TO", to.c_str(), 0);
+    setenv("SMTP_SUBJECT", subject.c_str(), 0);
+    setenv("SMTP_BODY", body.c_str(), 0);
+    setenv("SMTP_HOST", m_host.c_str(), 0);
+    setenv("SMTP_PORT", std::to_string(m_port).c_str(), 0);
+    setenv("SMTP_USER", m_user.c_str(), 0);
+    setenv("SMTP_PASS", m_pass.c_str(), 0);
+    setenv("SMTP_FROM", m_from.c_str(), 0);
 
     // python3 -c "..."  reads SMTP_* from env, no shell escaping issues
     const char *script =

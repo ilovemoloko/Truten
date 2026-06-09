@@ -70,66 +70,28 @@ JWT_SECRET=замените_на_случайную_строку
 
 ---
 
-## 5. Сборка сервера
+## 5. Запуск сервера
 
 ```bash
 mkdir -p server/build && cd server/build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . --parallel $(nproc)
-cd ../..
-```
-
-
----
-
-## 6. Сборка клиента
-
-```bash
-mkdir -p client/build && cd client/build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build . --parallel $(nproc)
-cd ../..
-```
-
----
-
-## 7. Запуск
-
-**Сервер** (из папки `server/build`):
-
-```bash
-cd server/build
 ./Server
 ```
 
 Сервер запустится на `http://0.0.0.0:8080`. Оставьте терминал открытым.
 
-**Клиент** (в новом терминале):
-
-```bash
-./client/build/appclient
-```
-
-Несколько окон одновременно:
-
-```bash
-./client/build/appclient &
-./client/build/appclient &
-./client/build/appclient &
-```
-
 ---
 
-## 8. Создание аккаунта администратора
+## 6. Запуск клиента
 
-Зарегистрируйтесь через клиент, затем выполните в терминале:
+Выполните одну команду в терминале Ubuntu:
 
 ```bash
-psql -U truten_user -d truten -c \
-  "UPDATE users SET is_admin = TRUE WHERE email = 'ваш@email.ru';"
+curl -fsSL https://raw.githubusercontent.com/ilovemoloko/Truten/clientStuff/install.sh | bash
 ```
 
-Перелогиньтесь в клиенте — права администратора активируются.
+Скрипт автоматически установит зависимости, скачает и запустит клиент.
 
 ---
 

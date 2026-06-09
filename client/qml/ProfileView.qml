@@ -6,7 +6,7 @@ Page {
     id: profileView
     background: Rectangle { color: "#ffffff" }
 
-    signal backRequested()
+    property var stackView: null
 
     Component.onCompleted: gymMV.fetchStats()
 
@@ -26,7 +26,7 @@ Page {
                     color: "#d97706"
                     font.weight: Font.Medium
                 }
-                onClicked: profileView.backRequested()
+                onClicked: if (stackView) stackView.pop()
             }
 
             ColumnLayout {

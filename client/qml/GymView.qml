@@ -195,7 +195,7 @@ Page {
                     Layout.alignment: Qt.AlignRight
                     background: Rectangle { color: "#f5f5f5"; radius: 6 }
                     palette.buttonText: "#57534e"
-                    onClicked: mainStack.push("ProfileView.qml")
+                    onClicked: mainStack.push("ProfileView.qml", { "stackView": mainStack })
                 }
 
                 Button {

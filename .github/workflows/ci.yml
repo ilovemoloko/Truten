@@ -1,0 +1,52 @@
+name: CI
+
+"on":
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake git pkg-config \
+            libpqxx-dev libssl-dev libasio-dev \
+            qt6-base-dev postgresql postgresql-client python3
+
+      - name: Prepare PostgreSQL
+        env:
+          TEST_DB_USER: truten_test_user
+          TEST_DB_PASS: truten_test_pass
+          TEST_DB_NAME: truten_test
+        run: |
+          sudo service postgresql start
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE ${TEST_DB_USER} LOGIN SUPERUSER PASSWORD '${TEST_DB_PASS}';"
+          sudo -u postgres createdb -O "${TEST_DB_USER}" "${TEST_DB_NAME}"
+
+      - name: Build server
+        run: |
+          cmake -S server -B server/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build server/build --parallel 2
+
+      - name: Build tests
+        run: |
+          cmake -S tests -B tests/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build tests/build --parallel 2
+
+      - name: Run tests
+        env:
+          TRUTEN_TEST_DB_HOST: 127.0.0.1
+          TRUTEN_TEST_DB_PORT: 5432
+          TRUTEN_TEST_DB_NAME: truten_test
+          TRUTEN_TEST_DB_USER: truten_test_user
+          TRUTEN_TEST_DB_PASS: truten_test_pass
+          PGPASSWORD: truten_test_pass
+        run: ctest --test-dir tests/build --output-on-failure -V

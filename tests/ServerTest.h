@@ -31,12 +31,17 @@ private slots:
     void testRegisterUser();
     void testLoginAdmin();
     void testLoginUser();
+    void testServerFailsWithoutJwtSecret();
 
     void testCreateGym();
     void testGetGyms();
 
     void testCreateSlot();
     void testGetSlots();
+
+    void testUserCannotActAsAnotherUser();
+    void testUserCannotManageSlots();
+    void testUserCannotUseAdminApi();
 
     void testBookSlot();
     void testBookSlotAlreadyEnrolled();
@@ -57,6 +62,7 @@ private:
 
     Response get(const QString &path, const QString &token = {});
     Response post(const QString &path, const QJsonObject &body, const QString &token = {});
+    Response patch(const QString &path, const QJsonObject &body, const QString &token = {});
     Response del(const QString &path, const QJsonObject &body, const QString &token = {});
 
     bool waitForServer(int timeoutMs = 8000);

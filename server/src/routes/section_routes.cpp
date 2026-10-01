@@ -19,7 +19,10 @@ crow::response SectionRoutes::getGymSlots(const std::string &gym_id) const {
     return {std::move(final)};
 }
 
-crow::response SectionRoutes::addGym(const crow::request& req) {
+crow::response SectionRoutes::addGym(
+    const crow::request& req,
+    const std::string& authenticated_user_id
+) {
     RequestHandler request(req);
     request.require("gymName");
     request.require("creatorId");
@@ -27,12 +30,15 @@ crow::response SectionRoutes::addGym(const crow::request& req) {
         return ResponseBuilder(request).build();
     }
     auto gym_name = static_cast<std::string>(request["gymName"]);
-    auto creator_id = static_cast<std::string>(request["creatorId"]);
+    auto requested_creator_id = static_cast<std::string>(request["creatorId"]);
+    if (requested_creator_id != authenticated_user_id) {
+        return ResponseBuilder(RESPONSE_CODE::NO_ACCESS, "Cannot create a gym as another user").build();
+    }
     return db_->executeInTransaction([&]() {
-        if (!db_user.isAdmin(creator_id, true)) {
-            return ResponseBuilder(RESPONSE_CODE::NO_ACCESS).build();
+        if (!db_user.isAdmin(authenticated_user_id, true)) {
+            return ResponseBuilder(RESPONSE_CODE::NO_ACCESS, "Admin access required").build();
         }
-        db_slot.createGym(gym_name, creator_id);
+        db_slot.createGym(gym_name, authenticated_user_id);
         return ResponseBuilder().build();
     });
 }

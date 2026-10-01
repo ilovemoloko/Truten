@@ -3,13 +3,21 @@
 
 QueueRoutes::QueueRoutes(const std::shared_ptr<Database>& db) : db_(db), db_slots(db), db_user(db) {}
 
-crow::response QueueRoutes::joinQueue(const crow::request& req, const std::string& slot_id) {
+crow::response QueueRoutes::joinQueue(
+    const crow::request& req,
+    const std::string& slot_id,
+    const std::string& authenticated_user_id
+) {
     RequestHandler request(req);
     request.require("userId", crow::json::type::String);
     if (!request.responseIsOk()) {
         return ResponseBuilder(request).build();
     }
-    const auto user_id = std::string(request["userId"]);
+    const auto requested_user_id = std::string(request["userId"]);
+    if (requested_user_id != authenticated_user_id) {
+        return ResponseBuilder(RESPONSE_CODE::NO_ACCESS, "Cannot act as another user").build();
+    }
+    const auto &user_id = authenticated_user_id;
 
     return db_->executeInTransaction([&]() {
         // block rows in order slot, user (to avoid deadlock)
@@ -44,13 +52,21 @@ crow::response QueueRoutes::joinQueue(const crow::request& req, const std::strin
     });
 }
 
-crow::response QueueRoutes::leaveQueue(const crow::request& req, const std::string& slot_id) {
+crow::response QueueRoutes::leaveQueue(
+    const crow::request& req,
+    const std::string& slot_id,
+    const std::string& authenticated_user_id
+) {
     RequestHandler request(req);
     request.require("userId", crow::json::type::String);
     if (!request.responseIsOk()) {
         return ResponseBuilder(request).build();
     }
-    const auto user_id = std::string(request["userId"]);
+    const auto requested_user_id = std::string(request["userId"]);
+    if (requested_user_id != authenticated_user_id) {
+        return ResponseBuilder(RESPONSE_CODE::NO_ACCESS, "Cannot act as another user").build();
+    }
+    const auto &user_id = authenticated_user_id;
 
     return db_->executeInTransaction([&]() {
         db_slots.lockSlot(slot_id);

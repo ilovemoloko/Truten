@@ -68,7 +68,7 @@ void GymModel::addGymAdmin(const QString &gymId, const QString &userId) {
     QJsonObject json;
     json["userId"] = userId;
     QNetworkReply *reply = sendPostRequest(
-        "/sections/" + gymId + "/admins", json, Token::WITHOUT_TOKEN
+        "/sections/" + gymId + "/admins", json, Token::WITH_TOKEN
     );
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(

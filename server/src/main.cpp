@@ -5,10 +5,19 @@
 #include "scheduler.hpp"
 #include <thread>
 #include <cstdlib>
+#include <exception>
+#include <iostream>
 
 int main() {
     Database::loadEnv("../.env");
     Database::printEnvStatus();
+
+    try {
+        (void)jwt_secret();
+    } catch (const std::exception &e) {
+        std::cerr << "Fatal configuration error: " << e.what() << '\n';
+        return 1;
+    }
 
     auto get_env_safe = [](const char* key) -> std::string {
         const char* val = std::getenv(key);

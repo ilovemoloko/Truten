@@ -2,6 +2,7 @@
 #define TRUTEN_SERVER_SECTION_ROUTES_HPP
 
 #include "crow.h"
+#include "jwt.hpp"
 #include "response_builder.hpp"
 #include <string>
 #include <utility>
@@ -15,7 +16,7 @@ public:
 
     [[nodiscard]] crow::response getGyms() const;
     [[nodiscard]] crow::response getGymSlots(const std::string &gym_id) const;
-    crow::response addGym(const crow::request& req);
+    crow::response addGym(const crow::request& req, const std::string& authenticated_user_id);
     crow::response addAdminToGym(const crow::request& req, const std::string& gym_id);
     crow::response getAdminsByGym(const std::string& gym_id) const;
 
@@ -28,12 +29,20 @@ public:
             });
 
         CROW_ROUTE(app, "/v1/sections/gymList").methods("POST"_method)(
-            [this](const crow::request &req) {
-                return addGym(req);
+            [this, &app](const crow::request &req) {
+                const auto &ctx = app.template get_context<AuthMiddleware>(req);
+                if (!ctx.is_admin) {
+                    return ResponseBuilder(RESPONSE_CODE::NO_ACCESS, "Admin access required").build();
+                }
+                return addGym(req, ctx.user_id);
             });
 
         CROW_ROUTE(app, "/v1/sections/<string>/admins").methods("POST"_method)(
-            [this](const crow::request& req, const std::string& gym_id) {
+            [this, &app](const crow::request& req, const std::string& gym_id) {
+                const auto &ctx = app.template get_context<AuthMiddleware>(req);
+                if (!ctx.is_admin) {
+                    return ResponseBuilder(RESPONSE_CODE::NO_ACCESS, "Admin access required").build();
+                }
                 return addAdminToGym(req, gym_id);
             });
 

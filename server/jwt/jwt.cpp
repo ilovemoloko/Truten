@@ -1,14 +1,14 @@
 #include <jwt-cpp/jwt.h>
 #include <cstdlib>
 #include <chrono>
+#include <stdexcept>
 
 static std::string jwt_secret() {
     const char *s = std::getenv("JWT_SECRET");
-    if (s) {
-        return std::string(s);
-    } else {
-        return std::string("dev-secret");
+    if (s == nullptr || *s == '\0') {
+        throw std::runtime_error("JWT_SECRET is required and must not be empty");
     }
+    return std::string(s);
 } //return secret for jwt
 
 static std::string make_access_token(const std::string &user_id, jwt::claim is_admin) {

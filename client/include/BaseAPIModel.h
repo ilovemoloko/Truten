@@ -1,11 +1,12 @@
 #ifndef BASEAPIMODEL_H
 #define BASEAPIMODEL_H
 
-#include <QJsonObject>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QJsonParseError>
 #include <QNetworkAccessManager>
 #include <QObject>
+#include <functional>
 #include "enumToken.h"
 
 class BaseModel : public QObject {
@@ -48,6 +49,16 @@ public:
         m_refreshToken = token;
     }
 
+    static QString getAccessToken() {
+        return m_accessToken;
+    }
+
+    static QString getRefreshToken() {
+        return m_refreshToken;
+    }
+
+    static void clearSession();
+
     QNetworkReply *sendPostRequest(
         const QString &path,
         const QJsonObject &json,
@@ -71,6 +82,23 @@ public:
     );
 
 private:
+    QNetworkReply *sendRequest(
+        const QByteArray &method,
+        const QString &path,
+        const QByteArray &body,
+        Token withToken,
+        int retryCount = 0
+    );
+
+    void refreshAndRetry(
+        const QString &path,
+        const QByteArray &method,
+        const QByteArray &body,
+        int retryCount,
+        std::function<void(const QJsonObject &)> onSuccess,
+        std::function<void(const QString &)> onError
+    );
+
     static QString m_accessToken;
     static QString m_refreshToken;
     static QString m_userId;
